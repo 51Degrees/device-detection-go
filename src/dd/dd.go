@@ -26,7 +26,7 @@
 // implementation.
 package dd
 
-// #cgo LDFLAGS: -Ldevice-detection-cxx/lib -ldd
+// #cgo LDFLAGS: -Ldevice-detection-cxx/lib -lfiftyone-pattern-c -lfiftyone-device-detection-c -lfiftyone-common-c
 // #include <stdio.h>
 // #include <stdlib.h>
 // #include <string.h>

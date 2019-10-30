@@ -18,8 +18,10 @@ clean:
 	$(GOCLEAN)
 	$(GOCLEAN) dd
 	rm -f *.exe 
+	cd src/dd/device-detection-cxx && cmake .
 	cd src/dd/device-detection-cxx && $(MAKE) clean
 
 deps:
-	cd src/dd/device-detection-cxx && $(MAKE) all
+	cd src/dd/device-detection-cxx && cmake .
+	cd src/dd/device-detection-cxx && $(MAKE) fiftyone-pattern-c
 	go install dd

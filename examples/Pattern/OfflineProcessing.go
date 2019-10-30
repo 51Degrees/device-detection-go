@@ -90,8 +90,8 @@ import (
 )
 
 // Locations of data files.
-const dataFile = "src\\dd\\device-detection-cxx\\device-detection-data\\51Degrees-LiteV3.2.dat"
-const inputFile = "src\\dd\\device-detection-cxx\\device-detection-data\\20000 User Agents.csv"
+const dataFile = "src/dd/device-detection-cxx/device-detection-data/51Degrees-LiteV3.2.dat"
+const inputFile = "src/dd/device-detection-cxx/device-detection-data/20000 User Agents.csv"
 const outputFile = "offlineProcessingOutput.csv"
 
 // Number of records in the CSV file to process.
