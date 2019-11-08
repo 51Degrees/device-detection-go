@@ -108,6 +108,7 @@ func (manager *Manager) Get(property string) string {
 	return value
 }
 
+// Why is this returning the same manager?
 // Process sets the results for the User-Agent provided.
 func (manager *Manager) Process(userAgent string) *Manager {
 	var cuserAgent = C.CString(userAgent)

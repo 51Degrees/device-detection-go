@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<PipelineOptions>
+    <Elements>
+        <Element>
+            <BuildParameters>
+                <EndPoint>https://ts.51degrees.com/api/v4</EndPoint>
+                <ResourceKey>Obtain a resource key from https://configure.51degrees.com</ResourceKey>
+            </BuildParameters>
+            <BuilderName>CloudRequestEngine</BuilderName>
+        </Element>
+        <Element>
+            <BuilderName>DeviceDetectionCloudEngine</BuilderName>
+        </Element>
+        <Element>
+            <BuilderName>JavaScriptBundlerElement</BuilderName>
+        </Element>
+    </Elements>
+</PipelineOptions>

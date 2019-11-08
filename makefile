@@ -4,6 +4,7 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
+
 EXAMPLES := examples/Pattern
 SOURCES := $(wildcard $(EXAMPLES)/*.go)
 EXECUTABLES := $(patsubst $(EXAMPLES)/%.go, %.exe, $(SOURCES))
