@@ -47,8 +47,8 @@ This example assumes you have the 51Degrees Go API installed correctly.
 package main
 
 import (
-	"dd"
 	"fmt"
+	"foddd"
 )
 
 func main() {
@@ -65,7 +65,7 @@ func main() {
 	mediaHubUserAgent := "Mozilla/5.0 (Linux; Android 4.4.2; X7 Quad Core Build/KOT49H) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.0.0 Safari/537.36"
 
 	// Provides access to device detection functions.
-	manager := dd.Create(dataFile, "IsMobile,BrowserName,HardwareModel")
+	manager := foddd.Create(dataFile, "IsMobile,BrowserName,HardwareModel")
 	defer manager.Free()
 
 	fmt.Println("Starting Getting Started Example.")
