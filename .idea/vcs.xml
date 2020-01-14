@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/device-detection-cxx" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/device-detection-cxx/src/common-cxx" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/dd/device-detection-cxx" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/dd/device-detection-cxx/device-detection-data" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/dd/device-detection-cxx/doc-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/dd/device-detection-cxx/googletest-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/dd/device-detection-cxx/src/common-cxx" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/foddd/device-detection-cxx" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/foddd/device-detection-cxx/device-detection-data" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/foddd/device-detection-cxx/doc-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/foddd/device-detection-cxx/googletest-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/foddd/device-detection-cxx/src/common-cxx" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/github.com/golang/mock" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/github.com/qiniu/doxygen.io" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/golang.org/x/tools" vcs="Git" />
+  </component>
+</project>
