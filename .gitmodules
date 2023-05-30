@@ -1,6 +1,6 @@
 [submodule "dd/device-detection-cxx"]
 	path = dd/device-detection-cxx
-	url = ../device-detection-cxx
+url=https://github.com/51Degrees/device-detection-cxx.git
 [submodule "ci/common-ci"]
 	path = ci/common-ci
-	url = ../common-ci
+url=https://github.com/51Degrees/common-ci.git
