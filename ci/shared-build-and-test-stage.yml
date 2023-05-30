@@ -1,0 +1,199 @@
+# Template for build and test stage, which tests api on specified agent
+parameters:
+- name: runTests
+  type: string
+  default: 'On'
+- name: goVersion
+  type: string
+  default: '1.17.1'
+- name: windowsImage
+- name: linuxImage
+- name: macImage
+
+stages:
+- stage: Linux
+  dependsOn: []
+
+  jobs:
+    - job: Build_and_Test
+      displayName: Build and Test
+      condition: ne(${{ parameters.runTests }}, 'Off')
+
+      variables: 
+        - group: InternalKeys
+
+      strategy:
+        matrix:
+          Linux x86:
+            imageName: ${{ parameters.linuxImage }}
+            platform: 'x86'
+          Linux x64:
+            imageName: ${{ parameters.linuxImage }}
+            platform: 'x64'
+
+      pool:
+        vmImage: $(imageName)
+
+      steps:
+      - checkout: self
+        submodules: recursive
+        lfs: true
+        persistCredentials: true
+
+      # Install any pre-requisites
+      - script: |
+          sudo apt-get -y install \
+            gcc-multilib \
+            g++-multilib        
+        displayName: 'Install Required Packages'
+
+      # Install go
+      - task: GoTool@0
+        displayName: 'Use go ${{ parameters.goVersion }} 64bit'
+        inputs:
+          version: '${{ parameters.goVersion }}'
+        condition: and(succeeded(), eq(variables['platform'], 'x64'))
+
+      # Install go for 32bit
+      - bash: |
+          # Download go package
+          wget https://golang.org/dl/go${{ parameters.goVersion }}.linux-386.tar.gz
+          if [ $? -ne 0 ]; then
+            echo "Failed to download 32bit go."
+            exit 1
+          fi
+
+          # Extract to one directory above
+          tar -xvf ./go${{ parameters.goVersion }}.linux-386.tar.gz -C ../
+          if [ $? -ne 0 ]; then
+            echo "Failed to extract 32bit go package."
+            exit 1
+          fi
+        displayName: 'Install golang 32bit ${{ parameters.goVersion }}'
+        condition: and(succeeded(), eq(variables['platform'], 'x86'))
+
+      # Run prebuild. Run powershell from bash environment via pwsh because
+      # in powershell environment the input parameters are not parsed correctly.
+      - bash: |
+          if [ '$(platform)' == 'x86' ]; then
+            pwsh -File ./dd/scripts/prebuild.ps1 -32bit
+          else
+            pwsh -File ./dd/scripts/prebuild.ps1
+          fi
+        displayName: 'Build device detection core binaries'
+        workingDirectory: '$(Build.SourcesDirectory)'
+
+      # Run test
+      - task: Go@0
+        displayName: 'Run 64bit tests'
+        inputs:
+          command: test
+          arguments: './...'
+        condition: and(succeeded(), eq(variables['platform'], 'x64'))
+      
+      # Run 32bit test. Go packages was installed in previous task
+      - bash: |
+          export PATH=$PWD/../go/bin:$PATH
+          export GOROOT=$PWD/../go
+          # Print out go version
+          go version
+
+          # Run test
+          go test './...'
+        displayName: 'Run 32bit tests'
+        condition: and(succeeded(), eq(variables['platform'], 'x86'))
+
+- stage: MacOS
+  dependsOn: []
+
+  jobs:
+    - job: Build_and_Test
+      displayName: Build and Test
+      condition: ne(${{ parameters.runTests }}, 'Off')
+
+      variables: 
+        - group: InternalKeys
+
+      strategy:
+        matrix:
+          MacOS:
+            imageName: ${{ parameters.macImage }}
+
+      pool:
+        vmImage: $(imageName)
+
+      steps:
+      - checkout: self
+        submodules: recursive
+        lfs: true
+        persistCredentials: true
+
+      # Install go
+      - task: GoTool@0
+        displayName: 'Use go ${{ parameters.goVersion }}'
+        inputs:
+          version: '${{ parameters.goVersion }}'
+
+      # Run prebuild
+      - powershell: |
+          ./dd/scripts/prebuild.ps1
+        displayName: 'Build device detection core binaries'
+        workingDirectory: '$(Build.SourcesDirectory)'
+
+      # Run test
+      - task: Go@0
+        displayName: 'Run tests'
+        inputs:
+          command: test
+          arguments: './...'
+
+# This stage use MinGW-x64 to build binaries.
+# By default we only test 64bit version.
+- stage: Windows
+  dependsOn: []
+
+  jobs:
+    - job: Build_and_Test
+      displayName: Build and Test
+      condition: ne(${{ parameters.runTests }}, 'Off')
+
+      variables: 
+        - group: InternalKeys
+      
+      strategy:
+        matrix:
+          Windows:
+            imageName: ${{ parameters.windowsImage }}
+
+      pool:
+        vmImage: $(imageName)
+
+      steps:
+      - checkout: self
+        submodules: recursive
+        lfs: true
+        persistCredentials: true
+
+      # Install go
+      - task: GoTool@0
+        displayName: 'Use go ${{ parameters.goVersion }}'
+        inputs:
+          version: '${{ parameters.goVersion }}'
+
+      # Run prebuild
+      - task: Powershell@2
+        inputs:
+          targetType: inline
+          script: |
+            $PSVersionTable
+            ./dd/scripts/prebuild.ps1
+          pwsh: true
+          displayName: 'Build device detection core binaries'
+          workingDirectory: '$(Build.SourcesDirectory)'
+
+      # Run test
+      - task: Go@0
+        displayName: 'Run tests'
+        inputs:
+          command: test
+          arguments: './...'

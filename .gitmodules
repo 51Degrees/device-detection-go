@@ -1,3 +1,6 @@
-[submodule "src/dd/device-detection-cxx"]
-	path = src/dd/device-detection-cxx
-	url = https://51degrees.visualstudio.com/DefaultCollection/Pipeline/_git/device-detection-cxx
+[submodule "dd/device-detection-cxx"]
+	path = dd/device-detection-cxx
+	url = ../device-detection-cxx
+[submodule "ci/common-ci"]
+	path = ci/common-ci
+	url = ../common-ci
