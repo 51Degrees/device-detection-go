@@ -14,7 +14,10 @@ Go Lite implementation is currently supporting the following platforms and archi
 - Windows 64bit, Intel
 
 Go version:
-- 1.20
+- 1.19
+
+Compiles with go 1.19 and higher.  The minimum version of 1.19 is dictated by the fact that this library is used 
+by the [prebid-server](https://github.com/prebid/prebid-server/) module and it has a minimum version requirement of go 1.19.
 
 ## Pre-requisites
 
