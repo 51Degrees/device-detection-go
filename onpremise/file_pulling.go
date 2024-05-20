@@ -108,8 +108,6 @@ func (e *Engine) doFilePulling() int {
 		}
 	}
 
-	e.logger.Printf("data file reloaded successfully")
-
 	if !e.fileSynced {
 		e.fileSynced = true
 	}

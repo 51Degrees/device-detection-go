@@ -31,6 +31,7 @@ import (
 	"math"
 	"regexp"
 	"strings"
+	"time"
 	"unsafe"
 )
 
@@ -250,4 +251,12 @@ func initHttpHeaderKeys(manager *ResourceManager) {
 		}
 	}
 	manager.HttpHeaderKeys = keys
+}
+
+func GetPublishedDate(manager *ResourceManager) time.Time {
+	cDataSet := (*C.DataSetHash)(unsafe.Pointer(C.DataSetGet(manager.CPtr)))
+	// Release the dataset
+	defer C.DataSetRelease((*C.DataSetBase)(unsafe.Pointer(cDataSet)))
+	published := cDataSet.header.published
+	return time.Date(int(published.year), time.Month(published.month), int(published.day), 0, 0, 0, 0, time.UTC)
 }

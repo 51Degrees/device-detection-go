@@ -463,10 +463,16 @@ func (e *Engine) reloadManager(filePath string) error {
 		return nil
 	}
 	// if manager is nil, create a new one
+	defer func() {
+		year, month, day := e.getPublishedDate().Date()
+		e.logger.Printf("data file loaded from " + filePath + " published on: " + fmt.Sprintf("%d-%d-%d", year, month, day))
+	}()
+
 	if e.manager == nil {
 		e.manager = dd.NewResourceManager()
 		// init manager from file
 		err := dd.InitManagerFromFile(e.manager, *e.config, "", filePath)
+
 		if err != nil {
 			return fmt.Errorf("failed to init manager from file: %w", err)
 		}
@@ -534,4 +540,8 @@ func (e *Engine) getFilePath() string {
 	}
 
 	return e.dataFile
+}
+
+func (e *Engine) getPublishedDate() time.Time {
+	return dd.GetPublishedDate(e.manager)
 }
