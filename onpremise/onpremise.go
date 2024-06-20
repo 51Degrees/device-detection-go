@@ -260,7 +260,7 @@ func WithRandomization(seconds int) EngineOptions {
 }
 
 // WithProperties sets properties that the engine retrieves from the data file for each device detection result instance
-// default is "" which will include all possible properties
+// default is [] which will include all possible properties
 func WithProperties(properties []string) EngineOptions {
 	return func(cfg *Engine) error {
 		if properties != nil {
@@ -375,6 +375,11 @@ func mapEvidence(evidenceList []Evidence) (*dd.Evidence, error) {
 	}
 
 	return evidenceHash, nil
+}
+
+// Create a new raw ResultsHash object.
+func (e *Engine) NewResultsHash(evidenceCapacity uint32, overridesCapacity uint32) *dd.ResultsHash {
+	return dd.NewResultsHash(e.manager, evidenceCapacity, overridesCapacity)
 }
 
 // Stop has to be called to free all the resources of the engine
