@@ -2748,7 +2748,6 @@ EXTERNAL int64_t fiftyoneDegreesCacheHash64(const void *key);
 #define FIFTYONE_DEGREES_COLLECTION_FREE(c) \
 if (c != NULL) { c->freeCollection(c); }
 
-
 /**
  * Collection release macro used to release a collection item. This should
  * always be used in place of the release method to enable methods to be
@@ -2761,7 +2760,6 @@ if (c != NULL) { c->freeCollection(c); }
 #else
 #define FIFTYONE_DEGREES_COLLECTION_RELEASE(c, i)
 #endif
-
 
 /**
  * Collection header structure which defines the size and location of the
@@ -8766,7 +8764,7 @@ EXTERNAL fiftyoneDegreesStatusCode fiftyoneDegreesYamlFileIterateWithLimit(
  * @param length lengh of th buffer
  * @param keyValuePairs an array of key value pairs used to hold the document
  * key value pairs during the process. Each key and value length should be
- * big enough to hold the biggest  key or value. Else, insufficient memory error
+ * big enough to hold the biggest key or value. Else, insufficient memory error
  * will be thrown.
  * @param collectionSize size of the keyValuePairs array
  * @param state the state maintained externally. To be passed to the callback
