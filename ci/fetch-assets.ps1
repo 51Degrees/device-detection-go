@@ -2,16 +2,20 @@ param (
     [Parameter(Mandatory=$true)]
     [string]$RepoName
 )
+$ErrorActionPreference = "Stop"
 
 $assets = New-Item -ItemType Directory -Path assets -Force
 $assetsDestination = "$RepoName"
-$file = "51Degrees-LiteV4.1.hash"
+$files = "51Degrees-LiteV4.1.hash", "20000 Evidence Records.yml"
 
-if (!(Test-Path $assets/$file)) {
-    Write-Output "Downloading $file"
-    Invoke-WebRequest -Uri "https://github.com/51Degrees/device-detection-data/raw/main/51Degrees-LiteV4.1.hash" -OutFile $assets/$file
-} else {
-    Write-Output "'$file' exists, skipping download"
+foreach ($file in $files) {
+    if (!(Test-Path $assets/$file)) {
+        Write-Output "Downloading $file"
+        Invoke-WebRequest -Uri "https://github.com/51Degrees/device-detection-data/raw/main/$file" -OutFile $assets/$file
+    } else {
+        Write-Output "'$file' exists, skipping download"
+    }
+
+    New-Item -ItemType SymbolicLink -Force -Target "$assets/$file" -Path "$assetsDestination/$file"
 }
 
-New-Item -ItemType SymbolicLink -Force -Target "$assets/51Degrees-LiteV4.1.hash" -Path "$assetsDestination/51Degrees-LiteV4.1.hash"
