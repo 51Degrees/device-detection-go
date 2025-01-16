@@ -18,7 +18,8 @@
     "Image": "ubuntu-latest",
     "Language": "go",
     "LanguageVersion": "1.21",
-    "PackageRequirement": true
+    "PackageRequirement": true,
+    "RunPerformance": true
   },
   {
     "Name": "windows-latest-go-1.21",
