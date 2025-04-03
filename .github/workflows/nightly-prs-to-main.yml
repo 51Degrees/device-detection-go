@@ -4,20 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       dryrun:
-        default: false
+        default: true
         type: boolean
         description: Dry Run
-  workflow_run:
-    workflows: [Nightly Package Update]
-    types: [completed]
+  # workflow_run:
+  #   workflows: [Nightly Package Update]
+  #   types: [completed]
 
 jobs:
   Nightly_PRs_to_Main:
-    uses: 51Degrees/common-ci/.github/workflows/nightly-prs-to-main.yml@main
+    uses: 51Degrees/common-ci/.github/workflows/nightly-prs-to-main.yml@fix-compare-performance-images
     with:
       repo-name: ${{ github.event.repository.name }}
       org-name: ${{ github.event.repository.owner.login }}
       dryrun: ${{ inputs.dryrun || false }}
+      common-ci-ref: fix-compare-performance-images
       cache-assets: true
     secrets:
       token: ${{ secrets.ACCESS_TOKEN }}

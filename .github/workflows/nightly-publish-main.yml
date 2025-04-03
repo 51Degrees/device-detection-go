@@ -4,20 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       dryrun:
-        default: false
+        default: true
         type: boolean
         description: Dry Run
-  workflow_run:
-    workflows: [Nightly PRs to Main]
-    types: [completed]
+  # workflow_run:
+  #   workflows: [Nightly PRs to Main]
+  #   types: [completed]
 
 jobs:
   Nightly_Publish_Main:
-    uses: 51Degrees/common-ci/.github/workflows/nightly-publish-main.yml@main
+    uses: 51Degrees/common-ci/.github/workflows/nightly-publish.yml@fix-compare-performance-images
     with:
       repo-name: ${{ github.event.repository.name }}
       org-name: ${{ github.event.repository.owner.login }}
       dryrun: ${{ inputs.dryrun || false }}
+      common-ci-ref: fix-compare-performance-images
       build-platform: ubuntu-latest
       cache-assets: true
     secrets:
