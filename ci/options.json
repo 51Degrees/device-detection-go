@@ -1,20 +1,20 @@
 [
   {
-    "Name": "ubuntu-20.04-go-1.19",
-    "Image": "ubuntu-20.04",
+    "Name": "ubuntu-go-1.19",
+    "Image": "ubuntu-latest",
     "Language": "go",
     "LanguageVersion": "1.19",
     "PackageRequirement": true
   },
   {
-    "Name": "ubuntu-20.04-go-1.20",
-    "Image": "ubuntu-20.04",
+    "Name": "ubuntu-go-1.20",
+    "Image": "ubuntu-latest",
     "Language": "go",
     "LanguageVersion": "1.20",
     "PackageRequirement": true
   },
   {
-    "Name": "ubuntu-latest-go-1.21",
+    "Name": "ubuntu-go-1.21",
     "Image": "ubuntu-latest",
     "Language": "go",
     "LanguageVersion": "1.21",
@@ -22,14 +22,14 @@
     "RunPerformance": true
   },
   {
-    "Name": "windows-latest-go-1.21",
+    "Name": "windows-go-1.21",
     "Image": "windows-latest",
     "Language": "go",
     "LanguageVersion": "1.21",
     "PackageRequirement": true
   },
   {
-    "Name": "macos-latest-go-1.21",
+    "Name": "macos-go-1.21",
     "Image": "macos-latest",
     "Language": "go",
     "LanguageVersion": "1.21",
