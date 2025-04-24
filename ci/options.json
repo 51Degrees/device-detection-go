@@ -14,7 +14,7 @@
     "PackageRequirement": true
   },
   {
-    "Name": "ubuntu-go-1.21",
+    "Name": "ubuntu-latest-go-1.21",
     "Image": "ubuntu-latest",
     "Language": "go",
     "LanguageVersion": "1.21",
