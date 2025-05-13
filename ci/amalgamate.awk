@@ -24,11 +24,11 @@ function process_file(file,   line, header) {
 }
 
 function normalize_header(header, file) {
-    sub(/[^/]*$/, "", file) # basically dirname
+    sub(/[^\/]*$/, "", file) # basically dirname
 
     while (match(header, /^\.\.\//)) {
         sub(/^\.\.\//, "", header)
-        sub(/[^/]+\/$/, "", file)
+        sub(/[^\/]+\/$/, "", file)
     }
     return file header
 }
