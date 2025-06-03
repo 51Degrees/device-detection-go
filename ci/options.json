@@ -7,7 +7,7 @@
     "PackageRequirement": true
   },
   {
-    "Name": "ubuntu-latest-go-1.24",
+    "Name": "ubuntu",
     "Image": "ubuntu-latest",
     "Language": "go",
     "LanguageVersion": "1.24",
@@ -15,14 +15,14 @@
     "RunPerformance": true
   },
   {
-    "Name": "windows-go-1.24",
+    "Name": "windows",
     "Image": "windows-latest",
     "Language": "go",
     "LanguageVersion": "1.24",
     "PackageRequirement": true
   },
   {
-    "Name": "macos-go-1.24",
+    "Name": "macos",
     "Image": "macos-latest",
     "Language": "go",
     "LanguageVersion": "1.24",
