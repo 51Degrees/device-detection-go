@@ -1,12 +1,122 @@
 package onpremise
 
 import (
+	"bytes"
+	"compress/gzip"
+	common_go "github.com/51Degrees/common-go/v4"
+	"io"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/51Degrees/device-detection-go/v4/dd"
 )
+
+var mockHashMutex sync.Mutex
+
+func newMockDataFileServer(timeout time.Duration) *httptest.Server {
+	s := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				// Open the file for reading
+				mockHashMutex.Lock()
+				file, err := os.Open("./mock_hash.gz")
+				if err != nil {
+					log.Printf("Failed to open file: %v", err)
+					return
+				}
+				defer mockHashMutex.Unlock()
+				defer file.Close()
+
+				buffer := bytes.NewBuffer(make([]byte, 0))
+				_, err = io.Copy(buffer, file)
+				if err != nil {
+					log.Printf("Failed to read file: %v", err)
+					return
+				}
+
+				w.Header().Add("Content-MD5", "daebfa89ddefac8e6c4325c38f129504")
+				w.Header().Add("Content-Length", strconv.Itoa(buffer.Len()))
+				w.Header().Add("Content-Type", "application/octet-stream")
+
+				w.WriteHeader(http.StatusOK)
+
+				// Write the file to response
+				_, err = io.Copy(w, buffer)
+				if err != nil {
+					log.Printf("Failed to write file: %v", err)
+					return
+				}
+
+			},
+		),
+	)
+
+	s.URL = strings.ReplaceAll(s.URL, "127.0.0.1", "localhost")
+
+	return awaitServer(s, timeout)
+}
+
+func awaitServer(s *httptest.Server, timeout time.Duration) *httptest.Server {
+	readyChan := make(chan struct{}, 1)
+	go func(s *httptest.Server) {
+		for {
+			resp, err := http.Get(s.URL)
+			if err == nil && resp.StatusCode == http.StatusOK {
+				resp.Body.Close()
+				readyChan <- struct{}{}
+				close(readyChan)
+				return
+			}
+			resp.Body.Close()
+			time.Sleep(50 * time.Millisecond)
+		}
+	}(s)
+
+	select {
+	case <-readyChan:
+		return s
+	case <-time.After(timeout):
+		log.Fatalf("Failed to start server in %v", timeout)
+	}
+
+	return nil
+}
+
+func unzipAndSaveToTempFile(name string) (*os.File, error) {
+	mockHashMutex.Lock()
+	file, err := os.Open("mock_hash.gz")
+	defer mockHashMutex.Unlock()
+	defer file.Close()
+	if err != nil {
+		return nil, err
+	}
+	gReader, err := gzip.NewReader(file)
+	if err != nil {
+		return nil, err
+	}
+	defer gReader.Close()
+
+	uncompressed, err := io.ReadAll(gReader)
+	err = os.WriteFile(name, uncompressed, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	uFile, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer uFile.Close()
+
+	return uFile, nil
+}
 
 func TestCustomProvider(t *testing.T) {
 	mockServer := newMockDataFileServer(10 * time.Second)
@@ -100,7 +210,7 @@ func TestNoDataFileProvided(t *testing.T) {
 	if engine != nil {
 		t.Errorf("expected engine to be nil")
 	}
-	if err != ErrNoDataFileProvided {
+	if err != common_go.ErrNoDataFileProvided {
 		t.Errorf("expected ErrNoDataFileProvided")
 	}
 }
