@@ -12076,7 +12076,7 @@ static bool initialised = false;
 
 typedef struct memory_allocation_t {
 	fiftyoneDegreesTreeNode tree; /* Tree node data structure */
-	uint32_t size; /* The amount of memory allocated at pointer */
+	size_t size; /* The amount of memory allocated at pointer */
 } allocation;
 
 typedef struct memory_allocation_tree_t {
@@ -12159,7 +12159,7 @@ static void trackAllocation(void* pointer, size_t size) {
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
-	record->size = (uint32_t)size;
+	record->size = size;
 
 	// Update the tracking tree with the new allocation.
 #ifndef FIFTYONE_DEGREES_NO_THREADING
@@ -12185,7 +12185,7 @@ static void trackAllocation(void* pointer, size_t size) {
 }
 
 static void untrackAllocation(void *pointer) {
-	uint32_t size;
+	size_t size;
 	int shard = getShardFromPointer(pointer);
 
 	// Get the size of the memory being freed and free the tracking memory.
