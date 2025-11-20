@@ -80,7 +80,6 @@ func NewResultsHash(
 	overridesCapacity uint32) *ResultsHash {
 	r := C.ResultsHashCreate(
 		manager.CPtr,
-		C.uint32_t(uaCapacity),
 		C.uint32_t(overridesCapacity))
 
 	// Map the items list to Go slice. This is done once so every access to
@@ -557,7 +556,7 @@ func (results *ResultsHash) ResponseHeaders(
 				} else {
 					headerValue += val
 				}
-			}	
+			}
 			wrkHeaders[header] = headerValue
 		}
 	}
@@ -566,12 +565,12 @@ func (results *ResultsHash) ResponseHeaders(
 
 // Check if a slice of strings contains another string
 func sliceContains(s []string, e string) bool {
-    for _, a := range s {
-        if a == e {
-            return true
-        }
-    }
-    return false
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 // ResponseHeaders constructs the response header and use the input
