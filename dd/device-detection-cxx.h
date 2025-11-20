@@ -1,6 +1,6 @@
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -44,7 +44,7 @@
 
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is the subject of the following patents and patent
@@ -101,7 +101,7 @@
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -142,10 +142,16 @@
 #define EXTERNAL_VAR extern
 #endif
 
+// The characters at the start of a cookie or other storage key that indicate
+// the item is related to 51Degrees.
+#ifndef FIFTYONE_DEGREES_COMMON_COOKIE_PREFIX
+#define FIFTYONE_DEGREES_COMMON_COOKIE_PREFIX "51D_"
+#endif
+
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -275,7 +281,7 @@ EXTERNAL void* fiftyoneDegreesDataMalloc(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -336,7 +342,7 @@ EXTERNAL void* fiftyoneDegreesDataMalloc(
  * exception message will be printed to standard output, then the process will
  * exit.
  *
- * **C++** : As C++ supports exceptions, an fatal exception with the message
+ * **C++** : As C++ supports exceptions, a fatal exception with the message
  * will be thrown. This can then be caught or handled in whichever way the
  * caller sees fit.
  *
@@ -373,7 +379,7 @@ EXTERNAL void* fiftyoneDegreesDataMalloc(
 
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -510,6 +516,15 @@ typedef enum e_fiftyone_degrees_status_code {
 	FIFTYONE_DEGREES_STATUS_INCORRECT_IP_ADDRESS_FORMAT, /**< IP address 
 														format is incorrect */
 	FIFTYONE_DEGREES_STATUS_TEMP_FILE_ERROR, /**< Error creating temp file */
+	FIFTYONE_DEGREES_STATUS_INSUFFICIENT_CAPACITY, /**< Insufficient capacity of
+                                                    the array to hold all the items*/
+    FIFTYONE_DEGREES_STATUS_INVALID_INPUT, /**< Invalid input data (f.e. base64 / JSON
+										   misformat or semantic inconsistency) */
+	FIFTYONE_DEGREES_STATUS_UNSUPPORTED_STORED_VALUE_TYPE, /**< StoredValueType
+											is not supported at this version. */
+	FIFTYONE_DEGREES_STATUS_FILE_TOO_LARGE, /**< File size exceeds malloc capabilities */
+	FIFTYONE_DEGREES_STATUS_UNKNOWN_GEOMETRY, /**< Unsupported geometry type found in WKB */
+	FIFTYONE_DEGREES_STATUS_RESERVED_GEOMETRY, /**< Geometry type found in WKB is abstract/reserved */
 } fiftyoneDegreesStatusCode;
 
 /**
@@ -563,16 +578,27 @@ exception->status = s; \
  * Macro used to clear an exception type.
  */
 #define FIFTYONE_DEGREES_EXCEPTION_CLEAR \
+{ \
 exception->file = NULL; \
 exception->func = NULL; \
 exception->line = -1; \
-exception->status = FIFTYONE_DEGREES_STATUS_NOT_SET;
+exception->status = FIFTYONE_DEGREES_STATUS_NOT_SET; \
+}
+
+/**
+* Macro used to check if an exception status equals the value of t.
+* Warning: this macro should be avoided in anything other than test code as 
+* when exceptions are disabled there will be unpredictable results. Using a
+* local status variable for checks is a better pattern.
+*/
+#define FIFTYONE_DEGREES_EXCEPTION_CHECK(t) \
+(exception == NULL || exception->status == t)
 
 /**
  * Macro used to check if there is no exception currently.
  */
 #define FIFTYONE_DEGREES_EXCEPTION_OKAY \
-(exception == NULL || exception->status == FIFTYONE_DEGREES_STATUS_NOT_SET)
+FIFTYONE_DEGREES_EXCEPTION_CHECK(FIFTYONE_DEGREES_STATUS_NOT_SET)
 
 #ifdef FIFTYONE_DEGREES_EXCEPTIONS_HPP
 
@@ -599,13 +625,15 @@ fiftyoneDegreesExceptionCheckAndExit(exception);
 
 EXTERNAL typedef void* fiftyoneDegreesException;
 
-#define FIFTYONE_DEGREES_EXCEPTION_CLEAR exception = NULL;
+#define FIFTYONE_DEGREES_EXCEPTION_CLEAR
 
-#define FIFTYONE_DEGREES_EXCEPTION_SET(s) exception = NULL;
+#define FIFTYONE_DEGREES_EXCEPTION_SET(s)
 
-#define FIFTYONE_DEGREES_EXCEPTION_OKAY (exception == exception)
+#define FIFTYONE_DEGREES_EXCEPTION_OKAY true
 
 #define FIFTYONE_DEGREES_EXCEPTION_THROW
+
+#define FIFTYONE_DEGREES_EXCEPTION_CHECK(t) false
 
 #endif
 
@@ -647,7 +675,7 @@ EXTERNAL void fiftyoneDegreesExceptionCheckAndExit(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -1097,7 +1125,7 @@ typedef struct fiftyone_degrees_interlock_dw_type_t {
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -1289,6 +1317,80 @@ typedef struct fiftyone_degrees_interlock_dw_type_t {
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
+#ifndef FIFTYONE_DEGREES_FILE_OFFSET_H_INCLUDED
+#define FIFTYONE_DEGREES_FILE_OFFSET_H_INCLUDED
+
+/**
+ * @ingroup FiftyOneDegreesCommon
+ * @defgroup FiftyOneDegreesFile FileOffset
+ *
+ * `FileOffset` offset types:
+ * - signed `FileOffset` -- for interop with native API (fseek/ftell)
+ * - unsigned `FileOffsetUnsigned` -- as present in data file
+ *
+ *
+ * if FIFTYONE_DEGREES_LARGE_DATA_FILE_SUPPORT macro is defined,
+ * both types will be 64-bit.
+ *
+ * Motivation for this is that an offset in a large file
+ * beyond 4GB is not addressable by a `uint32_t` variable.
+ *
+ * For files smaller than 4GB `uint32_t` is fully sufficient to address an offset.
+ *
+ * `fseek`/`ftell` functions MAY also fail on files larger than 2 GiB
+ * due to the limitations of `long int` type used,
+ * so enabling the option MIGHT be necessary in those cases as well.
+ *
+ * On POSIX systems `_FILE_OFFSET_BITS` should be defined as `64` at the same time
+ * for `off_t` (used by `fseeko`/`ftello` from `<stdio.h>`) to be 64-bit as well.
+ *
+ * @{
+ */
+
+#include <stdint.h>
+
+typedef
+#ifdef FIFTYONE_DEGREES_LARGE_DATA_FILE_SUPPORT
+uint64_t
+#else
+uint32_t
+#endif
+fiftyoneDegreesFileOffsetUnsigned; /**< Type for collection start offset (in file). [unsigned] */
+
+typedef
+#ifdef FIFTYONE_DEGREES_LARGE_DATA_FILE_SUPPORT
+int64_t
+#else
+long
+#endif
+fiftyoneDegreesFileOffset; /**< Type for file offset in API. [signed] */
+
+/**
+ * @}
+ */
+#endif
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
 /**
  * @ingroup FiftyOneDegreesCommon
  * @defgroup FiftyOneDegreesMemory Memory
@@ -1307,7 +1409,7 @@ typedef struct fiftyone_degrees_interlock_dw_type_t {
 #include <stdbool.h>
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -1494,7 +1596,7 @@ typedef struct fiftyone_degrees_memory_reader_t {
 	byte *startByte; /**< The first byte in memory */
 	byte *current; /**< The current byte being read from */
 	byte *lastByte; /**< The maximum byte that can be read from */
-	long length; /**< Length of the file in bytes */
+	fiftyoneDegreesFileOffset length; /**< Length of the file in bytes */
 } fiftyoneDegreesMemoryReader;
 
 /**
@@ -1654,7 +1756,7 @@ EXTERNAL_VAR void (FIFTYONE_DEGREES_CALL_CONV *fiftyoneDegreesFreeAligned)(void*
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -1951,6 +2053,7 @@ EXTERNAL void fiftyoneDegreesPoolReset(fiftyoneDegreesPool *pool);
 #define FIFTYONE_DEGREES_FILE_MAX_PATH 4096
 #endif
 
+
 /**
  * File handle node in the stack of handles.
  */
@@ -1964,8 +2067,29 @@ typedef union fiftyone_degrees_file_handle_t {
  */
  typedef struct fiftyone_degrees_file_pool_t {
 	 fiftyoneDegreesPool pool; /**< The pool of file handles */
-	 long length; /**< Length of the file in bytes */
+	 fiftyoneDegreesFileOffset length; /**< Length of the file in bytes */
 } fiftyoneDegreesFilePool;
+
+/**
+ * Moves the file pointer to a specified location.
+ * @param stream Pointer to FILE structure.
+ * @param offset Number of bytes from origin.
+ * @param origin Initial position.
+ * @return 
+ */
+EXTERNAL int fiftyoneDegreesFileSeek(
+   FILE *stream,
+   fiftyoneDegreesFileOffset offset,
+   int origin);
+
+/**
+ * Gets the current position of a file pointer.
+ * @param stream Target FILE structure.
+ * @return The current file position.
+ */
+EXTERNAL fiftyoneDegreesFileOffset fiftyoneDegreesFileTell(
+   FILE *stream
+);
 
 /**
  * Releases the file handles contained in the pool and frees any internal
@@ -2069,7 +2193,7 @@ EXTERNAL bool fiftyoneDegreesFileGetExistingTempFile(
 	const char *masterFile,
 	const char **paths,
 	int count,
-	long bytesToCompare,
+	fiftyoneDegreesFileOffset bytesToCompare,
 	const char *destination);
 
 /**
@@ -2093,7 +2217,7 @@ EXTERNAL int fiftyoneDegreesFileDeleteUnusedTempFiles(
 	const char *masterFileName,
 	const char **paths,
 	int count,
-	long bytesToCompare);
+	fiftyoneDegreesFileOffset bytesToCompare);
 
 /**
  * Create a temporary file name and add it to the destination.
@@ -2193,7 +2317,7 @@ EXTERNAL void fiftyoneDegreesFileHandleRelease(
  * @param fileName path to the file
  * @return size of file in bytes or -1
  */
-EXTERNAL long fiftyoneDegreesFileGetSize(const char *fileName);
+EXTERNAL fiftyoneDegreesFileOffset fiftyoneDegreesFileGetSize(const char *fileName);
 
 /**
  * Reads the contents of a file into memory. The correct amount of memory will
@@ -2226,7 +2350,7 @@ EXTERNAL const char* fiftyoneDegreesFileGetFileName(const char *filePath);
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -2466,7 +2590,169 @@ EXTERNAL const char* fiftyoneDegreesFileGetFileName(const char *filePath);
 
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_COLLECTION_KEY_H_INCLUDED
+#define FIFTYONE_DEGREES_COLLECTION_KEY_H_INCLUDED
+
+/**
+ * @ingroup FiftyOneDegreesCommon
+ * @defgroup FiftyOneDegreesCollectionKey CollectionKey
+ *
+ * Group of related items such as keys.
+ *
+ * @{
+ */
+
+#include <stdint.h>
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_H_INCLUDED
+#define FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_H_INCLUDED
+
+/**
+ * Enum of property types.
+ */
+typedef enum e_fiftyone_degrees_property_value_type {
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_STRING = 0, /**< String */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_INTEGER = 1, /**< Integer */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_DOUBLE = 2, /**< Double */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_BOOLEAN = 3, /**< Boolean */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_JAVASCRIPT = 4, /**< JavaScript string */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_SINGLE_PRECISION_FLOAT = 5, /**< Single precision floating point value */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_SINGLE_BYTE = 6, /**< Single byte value */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_COORDINATE = 7, /**< Coordinate */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_IP_ADDRESS = 8, /**< Ip Range */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WKB = 9, /**< Well-known binary for geometry */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_OBJECT = 10, /**<  Mainly this is used for nested AspectData. */
+	/**
+	 * Angle north (positive) or south (negative) of the [celestial] equator,
+	 * [-90;90] saved as short (int16_t),
+	 * i.e. projected onto [-INT16_MAX;INT16_MAX]
+	 */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_DECLINATION = 11,
+	/**
+	 * Horizontal angle from a cardinal direction (e.g. 0 meridian),
+	 * [-180;180] saved as short (int16_t),
+	 * i.e. projected onto [-INT16_MAX;INT16_MAX]
+	 */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_AZIMUTH = 12,
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WKB_R = 13, /**< Well-known binary (reduced) for geometry */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WEIGHTED_STRING = 14, /**< Weighted list of String values. */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WEIGHTED_INT = 15, /**< Weighted list of Int values. */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WEIGHTED_DOUBLE = 16, /**< Weighted list of Double values. */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WEIGHTED_BOOL = 17, /**< Weighted list of Bool values. */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WEIGHTED_SINGLE = 18, /**< Weighted list of Single values. */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WEIGHTED_BYTE = 19, /**< Weighted list of Byte values. */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WEIGHTED_IP_ADDRESS= 20, /**< Weighted list of Ip range values. */
+	/**
+	 * Weighted list of Well-known binary for geometry (reduced) values.
+	 */
+	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_WEIGHTED_WKB_R = 21,
+	// Non-Property Collection Value Types
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_CUSTOM = 1000, /**< Reservation start. Should not be used. */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_VALUE, /**< fiftyoneDegreesValue */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_PROFILE, /**< fiftyoneDegreesProfile */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_PROFILE_OFFSET, /**< fiftyoneDegreesProfileOffset */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_COMPONENT, /**< fiftyoneDegreesComponent */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_PROPERTY, /**< fiftyoneDegreesProperty */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_PROPERTY_TYPE_RECORD, /**< fiftyoneDegreesPropertyTypeRecord */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_IPV4_RANGE, /**< fiftyoneDegreesIpv4Range */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_IPV6_RANGE, /**< fiftyoneDegreesIpv6Range */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_OFFSET_PERCENTAGE, /**< offsetPercentage (in ipi.c) */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_GRAPH_DATA_CLUSTER, /**< Cluster (in graph.c) */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_GRAPH_DATA_SPAN, /**< Span (in graph.c) */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_GRAPH_DATA_SPAN_BYTES, /**< bytes of Span (in graph.c) */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_GRAPH_DATA_NODE_BYTES, /**< bytes of node (in graph.c) */
+	FIFTYONE_DEGREES_COLLECTION_ENTRY_TYPE_GRAPH_INFO, /**< fiftyoneDegreesIpiCgInfo */
+} fiftyoneDegreesPropertyValueType;
+
+#endif
+
+/**
+ * Passed a pointer to the first part of a variable size item and returns
+ * the size of the entire item.
+ * @param initial pointer to the start of the item
+ * @return size of the item in bytes
+ */
+typedef uint32_t (*fiftyoneDegreesCollectionGetVariableSizeMethod)(
+	const void *initial,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Location of the item within the Collection.
+ */
+typedef union fiftyone_degrees_collection_index_or_offset_t {
+	uint32_t index;  /**< index of the item in the collection. */
+	uint32_t offset;  /**< byte offset of the item from the start of collection. */
+} fiftyoneDegreesCollectionIndexOrOffset;
+
+static const fiftyoneDegreesCollectionIndexOrOffset
+	fiftyoneDegreesCollectionIndexOrOffset_Zero = { 0 };
+
+/**
+ * Explains to a collection how to properly extract the requested value.
+ */
+typedef struct fiftyone_degrees_collection_key_type_t {
+	const fiftyoneDegreesPropertyValueType valueType;  /**< Size of known-length "head" of the item. */
+	uint32_t initialBytesCount; /**< Size of known-length "head" of the item. */
+	const fiftyoneDegreesCollectionGetVariableSizeMethod getFinalSizeMethod; /**< Size of unknown-length "tail" of the item. */
+} fiftyoneDegreesCollectionKeyType;
+
+/**
+ * Explains to a collection (or cache) what the consumer is looking for.
+ */
+typedef struct fiftyone_degrees_collection_key_t {
+	fiftyoneDegreesCollectionIndexOrOffset indexOrOffset; /**< Where to look for the item. */
+	const fiftyoneDegreesCollectionKeyType *keyType;  /**< Not used if collection is fixed width. */
+} fiftyoneDegreesCollectionKey;
+
+/**
+ * @}
+ */
+
+#endif
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -2739,7 +3025,7 @@ EXTERNAL int64_t fiftyoneDegreesCacheHash64(const void *key);
 #endif
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
+
 
 /**
  * Free a collection by checking if it is NULL first.
@@ -2756,7 +3042,7 @@ if (c != NULL) { c->freeCollection(c); }
  * @param i item to release
  */
 #ifndef FIFTYONE_DEGREES_MEMORY_ONLY
-#define FIFTYONE_DEGREES_COLLECTION_RELEASE(c, i) c->release(i)
+#define FIFTYONE_DEGREES_COLLECTION_RELEASE(c, i) { assert(!((i)->collection) || (c == (i)->collection)); c->release(i); };
 #else
 #define FIFTYONE_DEGREES_COLLECTION_RELEASE(c, i)
 #endif
@@ -2765,9 +3051,9 @@ if (c != NULL) { c->freeCollection(c); }
  * Collection header structure which defines the size and location of the
  * collection data.
  */
-#pragma pack(push, 4)
+#pragma pack(push, 1)
 typedef struct fiftyone_degrees_collection_header_t {
-	uint32_t startPosition; /**< Start position in the data file of the entities */
+	fiftyoneDegreesFileOffsetUnsigned startPosition; /**< Start position in the data file of the entities */
 	uint32_t length; /**< Length in bytes of all the entities */
 	uint32_t count; /**< Number of entities in the collection */
 } fiftyoneDegreesCollectionHeader;
@@ -2778,8 +3064,7 @@ typedef struct fiftyone_degrees_collection_header_t {
  * be created by the create methods.
  */
 typedef struct fiftyone_degrees_collection_config_t {
-	uint32_t loaded; /**< Number of items to load into memory from the start of
-					     the collection */
+	bool loaded; /**< Collection is loaded entirely into memory */
 	uint32_t capacity; /**< Number of items the cache should store, 0 for no
 	                       cache */
 	uint16_t concurrency; /**< Expected number of concurrent requests, 1 or
@@ -2801,10 +3086,12 @@ typedef struct fiftyone_degrees_collection_file_t fiftyoneDegreesCollectionFile;
 typedef struct fiftyone_degrees_collection_item_t {
 	fiftyoneDegreesData data; /**< Item data including allocated memory */
 	void *handle; /**< A handle that relates to the data. i.e. a cache node */
-	fiftyoneDegreesCollection *collection; /**< Collection the item came from
-	                                           which may not have been set.
-	                                           Should not be used by external
-	                                           code */
+
+	/**
+	 * Collection the item came from which may not have been set.
+	 * Should not be used by external code.
+	 */
+	const fiftyoneDegreesCollection *collection;
 } fiftyoneDegreesCollectionItem;
 
 /**
@@ -2812,32 +3099,23 @@ typedef struct fiftyone_degrees_collection_item_t {
  * if the item could not be loaded. The exception parameter is set to the 
  * status code to indicate the failure.
  * @param collection pointer to the file collection
- * @param offsetOrIndex index or offset to the item in the data structure
+ * @param key key of the item in the data structure
  * @param item pointer to the item structure to place the result in
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h.
  * @return the value in the data->ptr field, or NULL if not successful
  */
 typedef void* (*fiftyoneDegreesCollectionGetMethod)(
-	fiftyoneDegreesCollection *collection,
-	uint32_t indexOrOffset,
+	const fiftyoneDegreesCollection *collection,
+	const fiftyoneDegreesCollectionKey *key,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
-
-/**
- * Passed a pointer to the first part of a variable size item and returns
- * the size of the entire item.
- * @param initial pointer to the start of the item
- * @return size of the item in bytes
- */
-typedef uint32_t (*fiftyoneDegreesCollectionGetFileVariableSizeMethod)(
-	void *initial);
 
 /**
  * Reads the item from the underlying data file. Used by the file related
  * collection methods.
  * @param collection pointer to the file collection
- * @param offsetOrIndex index or offset to the item in the data structure
+ * @param key key of the item in the data structure
  * @param data pointer to the data structure to store the item
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h.
@@ -2845,7 +3123,7 @@ typedef uint32_t (*fiftyoneDegreesCollectionGetFileVariableSizeMethod)(
  */
 typedef void* (*fiftyoneDegreesCollectionFileRead)(
 	const fiftyoneDegreesCollectionFile *collection,
-	uint32_t offsetOrIndex,
+	const fiftyoneDegreesCollectionKey *key,
 	fiftyoneDegreesData *data,
 	fiftyoneDegreesException *exception);
 
@@ -2854,7 +3132,7 @@ typedef void* (*fiftyoneDegreesCollectionFileRead)(
  * of a binary search of ordering operation.
  * @param state to be used for the comparison
  * @param item the value to compare against the state
- * @param curIndex the index of the current item in the collection
+ * @param key key of the item in the data structure
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h
  * @return negative if a is lower than b, positive if a is higher than b or 0 
@@ -2863,7 +3141,7 @@ typedef void* (*fiftyoneDegreesCollectionFileRead)(
 typedef int(*fiftyoneDegreesCollectionItemComparer)(
 	void *state,
 	fiftyoneDegreesCollectionItem *item,
-	long curIndex,
+	fiftyoneDegreesCollectionKey key,
 	fiftyoneDegreesException *exception);
 
 /**
@@ -2913,12 +3191,11 @@ typedef struct fiftyone_degrees_collection_t {
 	                #fiftyoneDegreesCollectionMemory,
 	                #fiftyoneDegreesCollectionFile or 
 	                #fiftyoneDegreesCollectionCache */
-	fiftyoneDegreesCollection *next; /**< The next collection implementation or
-	                                    NULL */
 	uint32_t count; /**< The number of items, or 0 if not available */
 	uint32_t elementSize; /**< The size of each entry, or 0 if variable length */
 	uint32_t size; /**< Number of bytes in the source data structure containing
 					  the collection's data */
+	const char *typeName; /**< Name of collection type (vtable). */
 } fiftyoneDegreesCollection;
 
 /**
@@ -2939,7 +3216,7 @@ typedef struct fiftyone_degrees_collection_file_t {
 	fiftyoneDegreesCollection *collection; /**< The generic collection */
 	fiftyoneDegreesFilePool *reader; /**< Reader used to load items into the 
 									 cache, or NULL if no cache */
-	long offset; /**< Offset to the collection in the source data structure */
+	fiftyoneDegreesFileOffset offset; /**< Offset to the collection in the source data structure */
 	fiftyoneDegreesCollectionFileRead read; /**< Read method used to read an
 											item from file at an offset or
 											index */
@@ -2975,7 +3252,7 @@ EXTERNAL bool fiftyoneDegreesCollectionGetIsMemoryOnly();
  * @return the 32 bit integer at the index or offset provided
  */
 EXTERNAL int32_t fiftyoneDegreesCollectionGetInteger32(
-	fiftyoneDegreesCollection *collection,
+	const fiftyoneDegreesCollection *collection,
 	uint32_t indexOrOffset,
 	fiftyoneDegreesException *exception);
 
@@ -3041,7 +3318,7 @@ EXTERNAL fiftyoneDegreesFileHandle* fiftyoneDegreesCollectionReadFilePosition(
  * @param file pointer to the #fiftyoneDegreesCollectionFile to use for the
  * read
  * @param data structure to populate with a reference to the item
- * @param index zero based index of the item required in the fixed with data 
+ * @param key zero based index of the item required in the fixed with data
  * structure
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h.
@@ -3050,7 +3327,7 @@ EXTERNAL fiftyoneDegreesFileHandle* fiftyoneDegreesCollectionReadFilePosition(
  */
 EXTERNAL void* fiftyoneDegreesCollectionReadFileFixed(
 	const fiftyoneDegreesCollectionFile *file,
-	uint32_t index,
+	const fiftyoneDegreesCollectionKey *key,
 	fiftyoneDegreesData *data,
 	fiftyoneDegreesException *exception);
 
@@ -3078,10 +3355,8 @@ fiftyoneDegreesCollectionHeaderFromFile(
  * @param file pointer to the #fiftyoneDegreesCollectionFile to use for the
  * read
  * @param data structure to populate with a reference to the item
- * @param offset zero based offset to the item within the data structure
+ * @param key key of the item in the data structure
  * @param initial pointer to enough memory to store the initial data
- * @param initialSize amount of initial data to read
- * @param getFinalSize method pass the initial pointer to get the final size
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h.
  * @return a pointer to the item in the data structure or NULL if can't be
@@ -3090,10 +3365,8 @@ fiftyoneDegreesCollectionHeaderFromFile(
 EXTERNAL void* fiftyoneDegreesCollectionReadFileVariable(
 	const fiftyoneDegreesCollectionFile *file,
 	fiftyoneDegreesData *data,
-	uint32_t offset,
+	const fiftyoneDegreesCollectionKey *key,
 	void *initial,
-	size_t initialSize,
-	fiftyoneDegreesCollectionGetFileVariableSizeMethod getFinalSize,
 	fiftyoneDegreesException *exception);
 
 /**
@@ -3126,8 +3399,9 @@ fiftyoneDegreesCollectionHeaderFromMemory(
  * @param item memory to be used to store the current value being compared. 
  * Will have a lock on the item at the index returned if an item is found.
  * The caller should release the item when finished with it.
- * @param lowerIndex to start the search at
- * @param upperIndex to end the search at
+ * @param lowerKey to start the search at
+ * @param upperKey to end the search at
+ * @param keyType type of lower/upper keys
  * @param state used with the compare method when comparing items
  * @param comparer method used to perform the comparison
  * @param exception pointer to an exception data structure to be used if an
@@ -3135,10 +3409,11 @@ fiftyoneDegreesCollectionHeaderFromMemory(
  * @return the index of the item if found, otherwise -1.
  */
 EXTERNAL long fiftyoneDegreesCollectionBinarySearch(
-	fiftyoneDegreesCollection *collection,
+	const fiftyoneDegreesCollection *collection,
 	fiftyoneDegreesCollectionItem *item,
-	uint32_t lowerIndex,
-	uint32_t upperIndex,
+	fiftyoneDegreesCollectionIndexOrOffset lowerKey,
+	fiftyoneDegreesCollectionIndexOrOffset upperKey,
+	const fiftyoneDegreesCollectionKeyType *keyType,
 	void *state,
 	fiftyoneDegreesCollectionItemComparer comparer,
 	fiftyoneDegreesException *exception);
@@ -3156,8 +3431,7 @@ EXTERNAL long fiftyoneDegreesCollectionBinarySearch(
  * @param collection to get the count for
  * @return the number of items in the collection
  */
-EXTERNAL uint32_t fiftyoneDegreesCollectionGetCount(
-	fiftyoneDegreesCollection *collection);
+#define fiftyoneDegreesCollectionGetCount(collection) ((collection)->count)
 
 /**
  * @}
@@ -3166,7 +3440,7 @@ EXTERNAL uint32_t fiftyoneDegreesCollectionGetCount(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -3190,8 +3464,7 @@ EXTERNAL uint32_t fiftyoneDegreesCollectionGetCount(
 #define FIFTYONE_DEGREES_EVIDENCE_H_INCLUDED
 
 /**
- * @ingroup FiftyOneDegreesCommon
- * @defgroup FiftyOneDegreesEvidence Evidence
+ * @ingroup FiftyOneDegreesCommon * @defgroup FiftyOneDegreesEvidence Evidence
  *
  * Contains key value pairs as evidence to be processed.
  *
@@ -3288,7 +3561,7 @@ EXTERNAL uint32_t fiftyoneDegreesCollectionGetCount(
 #include <stdlib.h>
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -3320,7 +3593,7 @@ EXTERNAL uint32_t fiftyoneDegreesCollectionGetCount(
  * ## Introduction
  *
  * IP v4 and v6 addresses can be parsed using the
- * #fiftyoneDegreesIpParseAddress and #fiftyoneDegreesIpParseAddresses methods.
+ * #fiftyoneDegreesIpAddressParse and #fiftyoneDegreesIpAddressesParse methods.
  *
  * @{
  */
@@ -3342,65 +3615,33 @@ EXTERNAL uint32_t fiftyoneDegreesCollectionGetCount(
 /**
  * Enum indicating the type of IP address.
  */
-typedef enum e_fiftyone_degrees_evidence_ip_type {
-	FIFTYONE_DEGREES_EVIDENCE_IP_TYPE_IPV4 = 0, /**< An IPv4 address */
-	FIFTYONE_DEGREES_EVIDENCE_IP_TYPE_IPV6 = 1, /**< An IPv6 address */
-	FIFTYONE_DEGREES_EVIDENCE_IP_TYPE_INVALID = 2, /**< Invalid IP address */
-} fiftyoneDegreesEvidenceIpType;
-
-/** @cond FORWARD_DECLARATIONS */
-typedef struct fiftyone_degrees_evidence_ip_address
-	fiftyoneDegreesEvidenceIpAddress;
-/** @endcond */
+typedef enum e_fiftyone_degrees_ip_type {
+	FIFTYONE_DEGREES_IP_TYPE_INVALID = 0, /**< Invalid IP address */
+	FIFTYONE_DEGREES_IP_TYPE_IPV4 = 4, /**< An IPv4 address */
+	FIFTYONE_DEGREES_IP_TYPE_IPV6 = 6, /**< An IPv6 address */
+} fiftyoneDegreesIpType;
 
 /**
- * IP address structure containing the bytes of a v4 or v6 IP address. This 
- * contains a pointer to a next IP address to enable a linked list to be
- * created.
+ * The structure to hold a IP Address in byte array format.
  */
-typedef struct fiftyone_degrees_evidence_ip_address {
-	fiftyoneDegreesEvidenceIpType type; /**< The type of address (v4 or v6) */
-	byte *address; /**< The first byte of the address */
-	byte *current; /**< When building the address the next byte to update */
-	fiftyoneDegreesEvidenceIpAddress *next; /**< Next address in the list or
-											NULL */
-	byte bytesPresent; /**< Number of bytes in the original string which are
-					   not abbreviated */
-	// const char *originalStart; // The first character for the IP address
-	// const char *originalEnd; // The last character for the IP addresses
-} fiftyoneDegreesEvidenceIpAddress;
-
-/**
- * Free a linked list of IP addresses. This can also be a single IP address as
- * this is equivalent to a linked list with a size of 1.
- * @param free method to free the IP addresses
- * @param addresses head of the linked list
- */
-EXTERNAL void fiftyoneDegreesIpFreeAddresses(
-	void(*free)(void*),
-	fiftyoneDegreesEvidenceIpAddress *addresses);
+typedef struct fiftyone_degrees_ip_address_t {
+	byte value[FIFTYONE_DEGREES_IPV6_LENGTH]; /**< Buffer to hold the IP 
+											  address bytes array. */
+	byte type; /**< The type of the IP. @see fiftyoneDegreesIpType */
+} fiftyoneDegreesIpAddress;
 
 /**
  * Parse a single IP address string.
- * @param malloc method to allocate the IP address
+ * Does not modify the last 12 (out of 16) bytes when parsing IPv4.
  * @param start of the string containing the IP address to parse
- * @param end of the string containing the IP address to parse
- * @return pointer to the parsed IP address
+ * @param end the last character of the string (with IP address) to be considered for parsing
+ * @param address memory to write parsed IP address into.
+ * @return <c>true</c> if address was parsed correctly, <c>false</c> otherwise
  */
-EXTERNAL fiftyoneDegreesEvidenceIpAddress* fiftyoneDegreesIpParseAddress(
-	void*(*malloc)(size_t),
+EXTERNAL bool fiftyoneDegreesIpAddressParse(
 	const char *start,
-	const char *end);
-
-/**
- * Parse a list of IP addresses and return as a linked list.
- * @param malloc method to allocate IP addresses
- * @param start of the string containing the IP addresses to parse
- * @return pointer to the head of the linked list
- */
-EXTERNAL fiftyoneDegreesEvidenceIpAddress* fiftyoneDegreesIpParseAddresses(
-	void*(*malloc)(size_t),
-	const char *start);
+	const char *end,
+	fiftyoneDegreesIpAddress *address);
 
 /**
  * Compare two IP addresses in its binary form
@@ -3414,10 +3655,10 @@ EXTERNAL fiftyoneDegreesEvidenceIpAddress* fiftyoneDegreesIpParseAddresses(
  * > 0 for ipAddress1 comes after ipAddress2
  * < 0 for ipAddress1 comes before ipAddress2
  */
-EXTERNAL int fiftyoneDegreesCompareIpAddresses(
+EXTERNAL int fiftyoneDegreesIpAddressesCompare(
 	const unsigned char *ipAddress1,
 	const unsigned char *ipAddress2,
-	fiftyoneDegreesEvidenceIpType type);
+	fiftyoneDegreesIpType type);
 
 /**
  * @}
@@ -3426,7 +3667,7 @@ EXTERNAL int fiftyoneDegreesCompareIpAddresses(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -3493,7 +3734,7 @@ EXTERNAL int fiftyoneDegreesCompareIpAddresses(
 #include <ctype.h>
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -3643,7 +3884,7 @@ EXTERNAL int fiftyoneDegreesFloatIsEqual(fiftyoneDegreesFloatInternal f1, fiftyo
  * the IEEE single precision standard is supported, default the type
  * to the native float type.
  */
-#if defined(_MSC_VER) || (defined(FLT_RADIX) && FLT_RADIX == 2 && FLT_MANT_DIG == 24 && FLT_MAX_EXP == 128 && FLT_MIN_EXP == -125)
+#if _MSC_VER || (FLT_RADIX == 2 && FLT_MANT_DIG == 24 && FLT_MAX_EXP == 128 && FLT_MIN_EXP == -125)
 /**
  * Define 51Degrees float implementation as native float.
  */
@@ -3706,18 +3947,6 @@ typedef fiftyoneDegreesFloatInternal fiftyoneDegreesFloat;
 #endif
 
 /**
- * Enumeration to indicate what format is held in a string item
- * These are the values that can be held at the first byte of
- * the #fiftyoneDegreeString value.
- */
-typedef enum fiftyone_degrees_string_format {
-	FIFTYONE_DEGREES_STRING_COORDINATE = 1, /**< Format is a pair of floats for latitude
-											and longitude values*/
-	FIFTYONE_DEGREES_STRING_IP_ADDRESS /**< Format is a byte array representation of an
-									   IP address*/
-} fiftyoneDegreesStringFormat;
-
-/**
  * Macro used to check for NULL before returning the string as a const char *.
  * @param s pointer to the #fiftyoneDegreesString
  * @return const char * string or NULL
@@ -3725,42 +3954,42 @@ typedef enum fiftyone_degrees_string_format {
 #define FIFTYONE_DEGREES_STRING(s) \
 	(const char*)(s == NULL ? NULL : &((fiftyoneDegreesString*)s)->value)
 
-/**
- * Macro used to check for NULL before returning the IP address byte array 
- * as a const char *.
- * @param s pointer to the #fiftyoneDegreesString
- * @return const char * string or NULL. NULL if the pointer is NULL or
- * the type stored at the pointer is not an IP address
+/** 
+ * String structure containing its value and size which maps to the string 
+ * byte format used in data files.
+ *
+ * @example
+ * String:
+ * 			Short – length – 10
+ * 			Byte value – first character of string – '5'
  */
-#define FIFTYONE_DEGREES_IP_ADDRESS(s) \
-	(const char*)(s == NULL \
-		|| ((fiftyoneDegreesString*)s)->value \
-			!= FIFTYONE_DEGREES_STRING_IP_ADDRESS ? \
-		NULL : \
-		&((fiftyoneDegreesString*)s)->trail.secondValue)
-
-/** String structure containing its value and size. */
 #pragma pack(push, 1)
 typedef struct fiftyone_degrees_string_t {
-	int16_t size; /**< Size of the string in memory */
+	int16_t size; /**< Size of the string in memory (starting from 'value') */
 	char value; /**< The first character of the string */
-	union {
-		char secondValue; /**< If the string is an IP address, this will be the start byte */
-		struct {
-			fiftyoneDegreesFloat lat;
-			fiftyoneDegreesFloat lon;
-		} coordinate; /**< If the string is a coordinate, this will hold the value */
-	} trail;
 } fiftyoneDegreesString;
 #pragma pack(pop)
 
+/**
+ * Gets size of String with trailing characters.
+ * @param initial pointer to string "head"
+ * @return full (with tail) struct size
+ */
 #ifndef FIFTYONE_DEGREES_MEMORY_ONLY
+EXTERNAL uint32_t fiftyoneDegreesStringGetFinalSize(
+	const void *initial,
+	fiftyoneDegreesException *exception);
+#else
+#define fiftyoneDegreesStringGetFinalSize NULL
+#endif
 
+
+#ifndef FIFTYONE_DEGREES_MEMORY_ONLY
 /**
  * Reads a string from the source file at the offset within the string
  * structure.
  * @param file collection to read from
- * @param offset of the string in the collection
+ * @param key of the string in the collection
  * @param data to store the new string in
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h.
@@ -3768,7 +3997,7 @@ typedef struct fiftyone_degrees_string_t {
  */
 EXTERNAL void* fiftyoneDegreesStringRead(
 	const fiftyoneDegreesCollectionFile *file,
-	uint32_t offset,
+	const fiftyoneDegreesCollectionKey *key,
 	fiftyoneDegreesData *data,
 	fiftyoneDegreesException *exception);
 
@@ -3783,8 +4012,8 @@ EXTERNAL void* fiftyoneDegreesStringRead(
  * exception occurs. See exceptions.h.
  * @return a pointer to string of NULL if the offset is not valid
  */
-EXTERNAL fiftyoneDegreesString* fiftyoneDegreesStringGet(
-	fiftyoneDegreesCollection *strings,
+EXTERNAL const fiftyoneDegreesString* fiftyoneDegreesStringGet(
+	const fiftyoneDegreesCollection *strings,
 	uint32_t offset,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
@@ -3816,16 +4045,195 @@ EXTERNAL int fiftyoneDegreesStringCompare(const char *a, const char *b);
  * @param b substring to be searched for
  * @return pointer to the first occurrence or NULL if not found
  */
-EXTERNAL char *fiftyoneDegreesStringSubString(const char *a, const char *b);
+EXTERNAL const char *fiftyoneDegreesStringSubString(const char *a, const char *b);
+
+/**
+ * @}
+ */
+
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_STRING_BUILDER_H_INCLUDED
+#define FIFTYONE_DEGREES_STRING_BUILDER_H_INCLUDED
+
+/**
+ * @ingroup FiftyOneDegreesCommon
+ * @defgroup FiftyOneDegreesString String
+ *
+ * String structures containing the string and length.
+ *
+ * ## Introduction
+ *
+ * The String structure allows a string and its length to be stored in one
+ * structure. This avoids unnecessary calls to strlen. Both the string and its
+ * length are allocated in a single operation, so the size of the actual
+ * structure (when including the string terminator) is
+ * sizeof(#fiftyoneDegreesString) + length. This means that the string itself
+ * starts at "value" and continues into the rest of the allocated memory.
+ *
+ * ## Get
+ *
+ * Getting a const char * from a #fiftyoneDegreesString structure can be done
+ * by casting a reference to the "value" field:
+ * ```
+ * (const char*)&string->value
+ * ```
+ * However, this can be simplified by using the #FIFTYONE_DEGREES_STRING macro
+ * which also performs a NULL check on the structure to avoid a segmentation
+ * fault.
+ *
+ * ## Compare
+ *
+ * This file contains two case insensitive string comparison methods as
+ * standards like `stricmp` vary across compilers.
+ *
+ * **fiftyoneDegreesStringCompare** : compares two strings case insensitively
+ *
+ * **fiftyoneDegreesStringCompareLength** : compares two strings case
+ * insensitively up to the length required. Any characters after this point are
+ * ignored
+ *
+ * @{
+ */
+
+#include <stdint.h>
+#include <ctype.h>
+
+union fiftyone_degrees_stored_binary_value_t;
+typedef union fiftyone_degrees_stored_binary_value_t fiftyoneDegreesStoredBinaryValue;
+
+struct fiftyone_degrees_var_length_byte_array_t;
+typedef struct fiftyone_degrees_var_length_byte_array_t fiftyoneDegreesVarLengthByteArray;
+
+/** String buffer for building strings with memory checks */
+typedef struct fiftyone_degrees_string_builder_t {
+	char* const ptr; /**< Pointer to the memory used by the buffer */
+	size_t const length; /**< Length of buffer */
+	char* current; /**</ Current position to add characters in the buffer */
+	size_t remaining; /**< Remaining characters in the buffer */
+	size_t added; /**< Characters added to the buffer or that would be
+					  added if the buffer were long enough */
+	bool full; /**< True if the buffer is full, otherwise false */
+} fiftyoneDegreesStringBuilder;
+
+/**
+ * Initializes the buffer.
+ * @param builder to initialize
+ * @return pointer to the builder passed
+ */
+EXTERNAL fiftyoneDegreesStringBuilder* fiftyoneDegreesStringBuilderInit(
+	fiftyoneDegreesStringBuilder* builder);
+
+/**
+ * Adds the character to the buffer.
+ * @param builder to add the character to
+ * @param value character to add
+ * @return pointer to the builder passed
+ */
+EXTERNAL fiftyoneDegreesStringBuilder* fiftyoneDegreesStringBuilderAddChar(
+	fiftyoneDegreesStringBuilder* builder,
+	char const value);
+
+/**
+ * Adds the integer to the buffer.
+ * @param builder to add the character to
+ * @param value integer to add
+ * @return pointer to the buffer passed
+ */
+EXTERNAL fiftyoneDegreesStringBuilder* fiftyoneDegreesStringBuilderAddInteger(
+	fiftyoneDegreesStringBuilder* builder,
+	int64_t const value);
+
+/**
+ * Adds the double to the buffer.
+ * @param builder to add the character to
+ * @param value floating-point number to add
+ * @param decimalPlaces precision (places after decimal dot)
+ * @return pointer to the buffer passed
+ */
+EXTERNAL fiftyoneDegreesStringBuilder* fiftyoneDegreesStringBuilderAddDouble(
+	fiftyoneDegreesStringBuilder* builder,
+	double value,
+	uint8_t decimalPlaces);
+
+/**
+ * Adds the string to the buffer.
+ * @param builder to add the character to
+ * @param value of chars to add
+ * @param length of chars to add
+ * @return pointer to the buffer passed
+ */
+EXTERNAL fiftyoneDegreesStringBuilder* fiftyoneDegreesStringBuilderAddChars(
+	fiftyoneDegreesStringBuilder* builder,
+	const char* value,
+	size_t length);
+
+/**
+ * Adds an the IP (as string) from byte "string".
+ * @param builder to add the IP to
+ * @param ipAddress binary (packed) "string" with IP to add
+ * @param type type of IP inside
+ * @param exception pointer to exception struct
+ */
+EXTERNAL void fiftyoneDegreesStringBuilderAddIpAddress(
+	fiftyoneDegreesStringBuilder* builder,
+	const fiftyoneDegreesVarLengthByteArray *ipAddress,
+	fiftyoneDegreesIpType type,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Adds a potentially packed value as a proper string to the buffer.
+ * @param builder to add the character to
+ * @param value from data file to add
+ * @param decimalPlaces precision for numbers (places after decimal dot)
+ * @param exception pointer to exception struct
+ * @return pointer to the buffer passed
+ */
+EXTERNAL fiftyoneDegreesStringBuilder* fiftyoneDegreesStringBuilderAddStringValue(
+	fiftyoneDegreesStringBuilder* builder,
+	const fiftyoneDegreesStoredBinaryValue* value,
+	fiftyoneDegreesPropertyValueType valueType,
+	uint8_t decimalPlaces,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Adds a null terminating character to the buffer.
+ * @param builder to terminate
+ * @return pointer to the buffer passed
+ */
+EXTERNAL fiftyoneDegreesStringBuilder* fiftyoneDegreesStringBuilderComplete(
+	fiftyoneDegreesStringBuilder* builder);
 
 /**
  * @}
  */
 
 #endif
+
+#endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -3865,6 +4273,8 @@ EXTERNAL char *fiftyoneDegreesStringSubString(const char *a, const char *b);
  * @{
  */
 
+#include <stdint.h>
+
 /**
  * Simple array structure definition macro used for generic types.
  * @param t type of item
@@ -3876,7 +4286,7 @@ EXTERNAL char *fiftyoneDegreesStringSubString(const char *a, const char *b);
 typedef struct fiftyone_degrees_array_##t##_t { \
 	uint32_t count; /**< Number of used items */ \
 	uint32_t capacity; /**< Number of available items */ \
-	t *items; /**< Pointer to the first item */ \
+	t* items; /**< Pointer to the first item */ \
 	m /**< Add any members provided by the caller */ \
 } t##Array;
 
@@ -3889,9 +4299,9 @@ typedef struct fiftyone_degrees_array_##t##_t { \
  * Initialises the array.
  */
 #define FIFTYONE_DEGREES_ARRAY_CREATE(t, i, c) \
-i = (t##Array*)Malloc(FIFTYONE_DEGREES_ARRAY_SIZE(t,c)); \
+i = (t##Array*)fiftyoneDegreesMalloc(FIFTYONE_DEGREES_ARRAY_SIZE(t,c)); \
 if (i != NULL) { \
-i->items = (t*)(i + 1); \
+i->items = c ? (t*)(i + 1) : NULL; \
 i->count = 0; \
 i->capacity = c; \
 }
@@ -3900,134 +4310,147 @@ i->capacity = c; \
  * @}
  */ 
 #endif
-
-/**
- * Evidence prefixes used to determine the category a piece of evidence
- * belongs to. This will determine how the value is parsed.
- */
-typedef enum e_fiftyone_degrees_evidence_prefix {
-	FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_STRING = 1 << 0, /**< An HTTP header
-														   value */
-	FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_IP_ADDRESSES = 1 << 1, /**< A list of
-																 IP addresses
-																 as a string to
-																 be parsed into
-																 a IP addresses
-																 collection. */
-	FIFTYONE_DEGREES_EVIDENCE_SERVER = 1 << 2, /**< A server value e.g. client
-											   IP */
-	FIFTYONE_DEGREES_EVIDENCE_QUERY = 1 << 3, /**< A query string parameter */
-	FIFTYONE_DEGREES_EVIDENCE_COOKIE = 1 << 4, /**< A cookie value */
-	FIFTYONE_DEGREES_EVIDENCE_IGNORE = 1 << 7, /**< The evidence is invalid and
-											   should be ignored */
-} fiftyoneDegreesEvidencePrefix;
-
-/** Map of prefix strings to prefix enum values. */
-typedef struct fiftyone_degrees_evidence_prefix_map_t {
-	const char *prefix; /**< Name of the prefix */
-	size_t prefixLength; /**< Length of the prefix string */
-	fiftyoneDegreesEvidencePrefix prefixEnum; /**< Enum value of prefix name */
-} fiftyoneDegreesEvidencePrefixMap;
-
-/**
- * Evidence key value pair structure which combines the prefix, key and value.
- */
-typedef struct fiftyone_degrees_evidence_key_value_pair_t {
-	fiftyoneDegreesEvidencePrefix prefix; /**< e.g. #FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_STRING */
-	const char *field; /**< e.g. User-Agent or ScreenPixelsWidth */
-	const void *originalValue; /**< The original unparsed value */
-	const void *parsedValue; /**< The parsed value which may not be a string */
-} fiftyoneDegreesEvidenceKeyValuePair;
-
-#define EVIDENCE_KEY_VALUE_MEMBERS \
-struct fiftyone_degrees_array_fiftyoneDegreesEvidenceKeyValuePair_t* pseudoEvidence; /**< The pseudo evidence. #fiftyoneDegreesEvidenceKeyValuePairArray type */
-
-FIFTYONE_DEGREES_ARRAY_TYPE(
-	fiftyoneDegreesEvidenceKeyValuePair,
-	EVIDENCE_KEY_VALUE_MEMBERS)
-
-
-/**
- * Callback method used to iterate evidence key value pairs.
- * @param state pointer provided to the iterator
- * @param pair evidence key value pair with the parsed value set
- * @return true if the iteration should continue otherwise false
- */
-typedef bool(*fiftyoneDegreesEvidenceIterateMethod)(
-	void *state, 
-	fiftyoneDegreesEvidenceKeyValuePair *pair);
-
-/**
- * Creates a new evidence array with the capacity requested.
- * @param capacity maximum number of evidence items
- * @return pointer to the newly created array
- */
-EXTERNAL fiftyoneDegreesEvidenceKeyValuePairArray* 
-fiftyoneDegreesEvidenceCreate(uint32_t capacity);
-
-/**
- * Frees the memory used by an evidence array.
- * @param evidence pointer to the array to be freed
- */
-EXTERNAL void fiftyoneDegreesEvidenceFree(
-	fiftyoneDegreesEvidenceKeyValuePairArray *evidence);
-
-/**
- * Adds a new entry to the evidence. The memory associated with the 
- * field and original value parameters must not be freed until after the 
- * evidence collection has been freed. This method will NOT copy the values.
- * @param evidence pointer to the evidence array to add the entry to
- * @param prefix enum indicating the category the entry belongs to
- * @param field used as the key for the entry within its prefix
- * @param originalValue the value to be parsed
- */
-EXTERNAL fiftyoneDegreesEvidenceKeyValuePair* fiftyoneDegreesEvidenceAddString(
-	fiftyoneDegreesEvidenceKeyValuePairArray *evidence,
-	fiftyoneDegreesEvidencePrefix prefix,
-	const char *field,
-	const char *originalValue);
-
-/**
- * Determines the evidence map prefix from the key.
- * @param key the evidence key including the evidence prefix .i.e. header
- * @return the prefix enumeration, or NULL if one does not exist
- */
-EXTERNAL fiftyoneDegreesEvidencePrefixMap* fiftyoneDegreesEvidenceMapPrefix(
-	const char *key);
-
-/**
- * Get the prefix string of an evidence prefix
- * @param prefix the evidence prefix enumeration
- * @return null terminated string value of the prefix, including a dot separator
- */
-EXTERNAL const char* fiftyoneDegreesEvidencePrefixString(
-	fiftyoneDegreesEvidencePrefix prefix);
-
-/**
- * Iterates over the evidence calling the callback method for any values that
- * match the prefixes provided. If there are pseudo evidence, this
- * will also iterate through them and perform the callback on each.
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
- * @param evidence key value pairs including prefixes
- * @param prefixes one or more prefix flags to return values for
- * @param state pointer passed to the callback method
- * @param callback method called when a matching prefix is found
- * @return the number of matching evidence keys iterated over
- */
-EXTERNAL uint32_t fiftyoneDegreesEvidenceIterate(
-	fiftyoneDegreesEvidenceKeyValuePairArray *evidence,
-	int prefixes,
-	void *state,
-	fiftyoneDegreesEvidenceIterateMethod callback);
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
 
-/**
- * @}
- */
+#ifndef FIFTYONE_DEGREES_PAIR_H_INCLUDED
+#define FIFTYONE_DEGREES_PAIR_H_INCLUDED
+
+#include <stddef.h>
+
+typedef struct fiftyone_degrees_key_value_pair_t {
+	const char* key; /**< pointer to the key string */
+	size_t keyLength; /**< number of characters in key */
+	const char* value; /**< pointer to the value string */
+	size_t valueLength; /**< number of characters in value */
+} fiftyoneDegreesKeyValuePair;
+
+FIFTYONE_DEGREES_ARRAY_TYPE(fiftyoneDegreesKeyValuePair, )
 
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_HEADERS_H_INCLUDED
+#define FIFTYONE_DEGREES_HEADERS_H_INCLUDED
+
+/**
+ * @ingroup FiftyOneDegreesCommon
+ * @defgroup FiftyOneDegreesHeaders Headers
+ *
+ * Common form of evidence in 51Degrees engines.
+ *
+ * ## Introduction
+ *
+ * HTTP headers are a common form of evidence, so required headers have their
+ * own structure and methods. By storing the unique id of headers, storing
+ * duplicates of the same header can be avoided. Duplicates can occur as a
+ * result of different cases or prefixes e.g. `User-Agent`, `user-agent` and
+ * `HTTP_user-agent` are all the same header.
+ *
+ * ## Creation
+ *
+ * A header structure is created using the #fiftyoneDegreesHeadersCreate
+ * method. This takes a state and a method used to extract the unique headers
+ * from the state. See the method description for more details.
+ *
+ * ## Get
+ *
+ * A header can be fetched using it's unique id with the
+ * #fiftyoneDegreesHeadersGetHeaderFromUniqueId method.
+ *
+ * The index of a header in the unique headers structure can also be fetched
+ * using the #fiftyoneDegreesHeaderGetIndex method.
+ *
+ * ## Free
+ *
+ * Once a headers structure is finished with, it is released using the
+ * #fiftyoneDegreesHeadersFree method.
+ *
+ * ## Usage Example
+ *
+ * ```
+ * fiftyoneDegreesHeadersGetMethod getHeaderId;
+ * void *state;
+ *
+ * // Create the headers structure
+ * fiftyoneDegreesHeaders *headers = fiftyoneDegreesHeadersCreate(
+ *     false,
+ *     state,
+ *     getHeaderId,
+ *     exception);
+ *
+ * // Get the index of a header
+ * int index = fiftyoneDegreesHeaderGetIndex(
+ *     headers,
+ *     "user-agent",
+ *     strlen("user-agent"));
+ *
+ * // Check that the header exists in the structure
+ * if (index >= 0) {
+ *
+ *     // Do something with the header
+ *     // ...
+ * }
+ *
+ * // Free the headers structure
+ * fiftyoneDegreesHeadersFree(headers);
+ * ```
+ *
+ * @{
+ */
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#ifdef _MSC_FULL_VER
+#include <string.h>
+#else
+#include <strings.h>
+#define _stricmp strcasecmp
+#define _strnicmp strncasecmp
+#endif
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -4193,9 +4616,351 @@ EXTERNAL void fiftyoneDegreesListRelease(fiftyoneDegreesList *list);
  */
 
 #endif
+
+#define FIFTYONE_DEGREES_PSEUDO_HEADER_SEP '\x1F' /** unit separator of headers
+													and headers' values that
+													form pseudo header and
+													its evidence */
+
+/**
+ * The unique id for the header field string in the data set.
+ */
+typedef uint32_t fiftyoneDegreesHeaderID;
+
+/**
+ * Forward declaration of the header structure.
+ */
+typedef struct fiftyone_degrees_header_t fiftyoneDegreesHeader;
+
+/**
+ * Pointer to a header structure. Used in an array of related headers.
+ */
+typedef fiftyoneDegreesHeader* fiftyoneDegreesHeaderPtr;
+
+/**
+ * Array of header indexes.
+ */
+FIFTYONE_DEGREES_ARRAY_TYPE(
+	fiftyoneDegreesHeaderPtr,
+	);
+typedef fiftyoneDegreesHeaderPtrArray fiftyoneDegreesHeaderPtrs;
+
+/**
+ * Structure for a header known to the corresponding data set.
+ */
+struct fiftyone_degrees_header_t {
+	uint32_t index; /**< Index of the header in the array of all headers */
+	const char* name; /**< Name of the header or pseudo header field as a
+					       null terminated string */
+	size_t nameLength; /**< Length of the name string excluding the terminating 
+						null */
+	fiftyoneDegreesHeaderID headerId; /**< Unique id in the data set for this 
+									  full header */
+	bool isDataSet; /**< True if the header originates from the data set and 
+					the headerId is valid */
+	fiftyoneDegreesHeaderPtrs* pseudoHeaders; /**< Array of pointers to
+												related pseudo headers */
+	fiftyoneDegreesHeaderPtrs* segmentHeaders; /**< Array of pointers to raw
+												  headers that form this pseudo
+												  header */
+};
+
+#define FIFTYONE_DEGREES_HEADERS_MEMBERS \
+bool expectUpperPrefixedHeaders; /**< True if the headers structure should
+								 expect input header to be prefixed with
+								 'HTTP_' */
+
+/**
+ * Array of Headers which should always be ordered in ascending order of 
+ * fullHeaderId.
+ */
+FIFTYONE_DEGREES_ARRAY_TYPE(
+	fiftyoneDegreesHeader, 
+	FIFTYONE_DEGREES_HEADERS_MEMBERS);
+
+/**
+ * Array of headers used to easily access and track the size of the array.
+ */
+typedef fiftyoneDegreesHeaderArray fiftyoneDegreesHeaders;
+
+/**
+ * Gets the unique id and name of the header at the requested index. The caller
+ * must use COLLECTION_RELEASE on nameItem when finished with the result.
+ * @param state pointer to data used by the method
+ * @param index of the header to get
+ * @param nameItem pointer to the collection item to populate with the name of
+ * the header
+ * @return unique id of the header
+ */
+typedef long(*fiftyoneDegreesHeadersGetMethod)(
+	void *state,
+	uint32_t index, 
+	fiftyoneDegreesCollectionItem *nameItem);
+
+/**
+ * Creates a new headers instance configured with the unique HTTP names needed
+ * from evidence. If the useUpperPrefixedHeaders flag is true then checks for 
+ * the presence of HTTP headers will also include checking for HTTP_ as a
+ * prefix to the header key. If header is a pseudo header, the indices of
+ * actual headers that form this header will be constructed.
+ *
+ * @param useUpperPrefixedHeaders true if HTTP_ prefixes should be checked
+ * @param state pointer used by getHeaderMethod to retrieve the header integer
+ * @param get used to return the HTTP header unique integer
+ * @param exception
+ * @return a new instance of #fiftyoneDegreesHeaders ready to be used to filter 
+ * HTTP headers.
+ */
+EXTERNAL fiftyoneDegreesHeaders* fiftyoneDegreesHeadersCreate(
+	bool useUpperPrefixedHeaders,
+	void *state,
+	fiftyoneDegreesHeadersGetMethod get,
+	fiftyoneDegreesException* exception);
+
+/**
+ * Provides the integer index of the HTTP header name, or -1 if there is no 
+ * matching header.
+ * @param headers structure created by #fiftyoneDegreesHeadersCreate
+ * @param httpHeaderName of the header whose index is required
+ * @param length number of characters in httpHeaderName
+ * @return the index of the HTTP header name, or -1 if the name does not exist
+ */
+EXTERNAL int fiftyoneDegreesHeaderGetIndex(
+	fiftyoneDegreesHeaders *headers,
+	const char* httpHeaderName,
+	size_t length);
+
+/**
+ * Gets a pointer to the header in the headers structure with a unique id
+ * matching the one provided. If the headers structure does not contain a
+ * header with the unique id, NULL will be returned.
+ * This method assumes that the headers in the structure are unique, if they
+ * are not, then the first matching header will be returned.
+ * @param headers pointer to the headers structure to search
+ * @param uniqueId id to search for
+ * @return pointer to the matching header, or NULL
+ */
+EXTERNAL fiftyoneDegreesHeader* fiftyoneDegreesHeadersGetHeaderFromUniqueId(
+	fiftyoneDegreesHeaders *headers,
+    fiftyoneDegreesHeaderID uniqueId);
+
+/**
+ * Frees the memory allocated by the #fiftyoneDegreesHeadersCreate method.
+ *
+ * @param headers structure created by #fiftyoneDegreesHeadersCreate
+ */
+EXTERNAL void fiftyoneDegreesHeadersFree(fiftyoneDegreesHeaders *headers);
+
+/**
+ * Determines if the field is an HTTP header.
+ * @param state results instance to check against
+ * @param field name from the evidence pair to be checked
+ * @param length of field string
+ * @return true if the evidence relates to an HTTP header, otherwise false.
+ */
+EXTERNAL bool fiftyoneDegreesHeadersIsHttp(
+	void *state,
+	const char* field,
+	size_t length);
+
+/**
+ * @}
+ */
+
+#endif
+
+/**
+ * Evidence prefixes used to determine the category a piece of evidence
+ * belongs to. This will determine how the value is parsed.
+ */
+typedef enum e_fiftyone_degrees_evidence_prefix {
+	FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_STRING = 1 << 0, /**< An HTTP header
+														   value */
+	FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_IP_ADDRESSES = 1 << 1, /**< A list of
+																 IP addresses
+																 as a string to
+																 be parsed into
+																 a IP addresses
+																 collection. */
+	FIFTYONE_DEGREES_EVIDENCE_SERVER = 1 << 2, /**< A server value e.g. client
+											   IP */
+	FIFTYONE_DEGREES_EVIDENCE_QUERY = 1 << 3, /**< A query string parameter */
+	FIFTYONE_DEGREES_EVIDENCE_COOKIE = 1 << 4, /**< A cookie value */
+	FIFTYONE_DEGREES_EVIDENCE_IGNORE = 1 << 7, /**< The evidence is invalid and
+											   should be ignored */
+} fiftyoneDegreesEvidencePrefix;
+
+/** Map of prefix strings to prefix enum values. */
+typedef struct fiftyone_degrees_evidence_prefix_map_t {
+	const char *prefix; /**< Name of the prefix */
+	size_t prefixLength; /**< Length of the prefix string */
+	fiftyoneDegreesEvidencePrefix prefixEnum; /**< Enum value of prefix name */
+} fiftyoneDegreesEvidencePrefixMap;
+
+/**
+ * Evidence key value pair structure which combines the prefix, key and value.
+ */
+typedef struct fiftyone_degrees_evidence_key_value_pair_t {
+	fiftyoneDegreesEvidencePrefix prefix; /**< e.g. #FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_STRING */
+	fiftyoneDegreesKeyValuePair item; /**< the field key and original value */
+	const void *parsedValue; /**< parsed value which may not be a string */
+	size_t parsedLength; /**< length of parsedValue string */
+	fiftyoneDegreesHeader* header; /**< Unique header in the data set, or 
+								   null if not related to a header */
+} fiftyoneDegreesEvidenceKeyValuePair;
+
+/**
+ * Forward declaration of the array so that it can point to an instance of the 
+ * same type.
+ */
+typedef struct fiftyone_degrees_array_fiftyoneDegreesEvidenceKeyValuePair_t 
+	fiftyoneDegreesEvidenceKeyValuePairArray;
+
+/**
+ * Pointers to the next and previous array of evidence key value pairs or 
+ * NULL if not present.
+ */
+#define FIFTYONE_DEGREES_ARRAY_EVIDENCE_MEMBER \
+	fiftyoneDegreesEvidenceKeyValuePairArray *next; \
+	fiftyoneDegreesEvidenceKeyValuePairArray *prev;
+
+/**
+ * Array of evidence key value pairs and a pointer to the next array if present
+ * or NULL of not present.
+ */
+FIFTYONE_DEGREES_ARRAY_TYPE(
+	fiftyoneDegreesEvidenceKeyValuePair,
+	FIFTYONE_DEGREES_ARRAY_EVIDENCE_MEMBER)
+
+/**
+ * Callback method used to iterate evidence key value pairs.
+ * @param state pointer provided to the iterator
+ * @param pair evidence key value pair with the parsed value set
+ * @return true if the iteration should continue otherwise false
+ */
+typedef bool(*fiftyoneDegreesEvidenceIterateMethod)(
+	void *state,
+	fiftyoneDegreesEvidenceKeyValuePair *pair);
+
+/**
+ * Creates a new evidence array with the capacity requested.
+ * @param capacity maximum number of evidence items
+ * @return pointer to the newly created array
+ */
+EXTERNAL fiftyoneDegreesEvidenceKeyValuePairArray* 
+	fiftyoneDegreesEvidenceCreate(uint32_t capacity);
+
+/**
+ * Frees the memory used by an evidence array and any other arrays pointed to
+ * by the instance passed via the next member.
+ * @param evidence pointer to the array to be freed
+ */
+EXTERNAL void fiftyoneDegreesEvidenceFree(
+	fiftyoneDegreesEvidenceKeyValuePairArray *evidence);
+
+/**
+ * Adds a new entry to the evidence. The memory associated with the 
+ * field and original value parameters must not be freed until after the 
+ * evidence collection has been freed. This method will NOT copy the values.
+ * If there is insufficient capacity in the evidence array then another array
+ * will be created and will be pointed to by the next member of the evidence 
+ * array passed.
+ * @param evidence pointer to the evidence array to add the entry to
+ * @param prefix enum indicating the category the entry belongs to
+ * @param key string with null terminator
+ * @param value string with null terminator
+ * @returns the new evidence key value pair instance
+ */
+EXTERNAL fiftyoneDegreesEvidenceKeyValuePair* fiftyoneDegreesEvidenceAddString(
+	fiftyoneDegreesEvidenceKeyValuePairArray *evidence,
+	fiftyoneDegreesEvidencePrefix prefix,
+	const char *key,
+	const char *value);
+
+/**
+ * Adds a new entry to the evidence. The memory associated with the
+ * field and original value parameters must not be freed until after the
+ * evidence collection has been freed. This method will NOT copy the values.
+ * If there is insufficient capacity in the evidence array then another array
+ * will be created and will be pointed to by the next member of the evidence
+ * array passed.
+ * @param evidence pointer to the evidence array to add the entry to
+ * @param prefix enum indicating the category the entry belongs to
+ * @param pair used as the key and value for the new entry
+ * @returns the new evidence key value pair instance
+ */
+EXTERNAL fiftyoneDegreesEvidenceKeyValuePair* fiftyoneDegreesEvidenceAddPair(
+	fiftyoneDegreesEvidenceKeyValuePairArray* evidence,
+	fiftyoneDegreesEvidencePrefix prefix,
+	fiftyoneDegreesKeyValuePair pair);
+
+/**
+ * Determines the evidence map prefix from the key.
+ * @param key the evidence key including the evidence prefix .i.e. header
+ * @return the prefix enumeration, or NULL if one does not exist
+ */
+EXTERNAL fiftyoneDegreesEvidencePrefixMap* fiftyoneDegreesEvidenceMapPrefix(
+	const char *key);
+
+/**
+ * Get the prefix string of an evidence prefix
+ * @param prefix the evidence prefix enumeration
+ * @return null terminated string value of the prefix, including a dot separator
+ */
+EXTERNAL const char* fiftyoneDegreesEvidencePrefixString(
+	fiftyoneDegreesEvidencePrefix prefix);
+
+/**
+ * Iterates over the evidence calling the callback method for any values that
+ * match the prefixes provided. If there are pseudo evidence, this
+ * will also iterate through them and perform the callback on each.
+ *
+ * @param evidence key value pairs including prefixes
+ * @param prefixes one or more prefix flags to return values for
+ * @param state pointer passed to the callback method
+ * @param callback method called when a matching prefix is found
+ * @return the number of matching evidence keys iterated over
+ */
+EXTERNAL uint32_t fiftyoneDegreesEvidenceIterate(
+	fiftyoneDegreesEvidenceKeyValuePairArray *evidence,
+	int prefixes,
+	void *state,
+	fiftyoneDegreesEvidenceIterateMethod callback);
+
+/**
+ * Iterates over the headers assembling the evidence values, considering the 
+ * prefixes, in the buffer if available. The call back method is called for 
+ * each header or pseudo header available. The buffer is only used with pseudo
+ * headers where multiple header values need to be combined into a single 
+ * value.
+ *
+ * @param evidence key value pairs including prefixes
+ * @param prefixes one or more prefix flags to return values for
+ * @param state pointer passed to the callback method
+ * @param headers to return evidence for if available
+ * @param buffer that MIGHT be used with the callback, null to disable 
+ * assembling headers
+ * @param length of the buffer
+ * @param callback method called when a matching prefix is found
+ * @return true if the callback was called successfully, otherwise false
+ */
+EXTERNAL bool fiftyoneDegreesEvidenceIterateForHeaders(
+	fiftyoneDegreesEvidenceKeyValuePairArray* evidence,
+	int prefixes,
+	fiftyoneDegreesHeaderPtrs* headers,
+	char* const buffer,
+	size_t const length,
+	void* state,
+	fiftyoneDegreesEvidenceIterateMethod callback);
+
+/**
+ * @}
+ */
+
+#endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -4454,7 +5219,7 @@ EXTERNAL void fiftyoneDegreesResourceReplace(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -4640,7 +5405,7 @@ EXTERNAL typedef struct fiftyone_degrees_properties_required_t {
  * @param item used to obtain a handle to the string
  * @return pointer to the string or NULL if no property available
  */
-typedef fiftyoneDegreesString*(*fiftyoneDegreesPropertiesGetMethod)(
+typedef const fiftyoneDegreesString*(*fiftyoneDegreesPropertiesGetMethod)(
 	void *state,
 	uint32_t index,
 	fiftyoneDegreesCollectionItem *item);
@@ -4762,7 +5527,7 @@ EXTERNAL void fiftyoneDegreesPropertiesFree(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -4830,7 +5595,7 @@ typedef struct fiftyone_degrees_date_t {
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -4915,6 +5680,14 @@ typedef struct fiftyoneDegrees_component_t {
 #pragma pack(pop)
 
 /**
+ * Gets size of Component with trailing key-value pair.
+ * @param initial pointer to component "head"
+ * @return full (with tail) struct size
+ */
+EXTERNAL uint32_t fiftyoneDegreesComponentGetFinalSize(
+	const void *initial,
+	fiftyoneDegreesException *exception);
+/**
  * Returns the string name of the component using the item provided. The
  * collection item must be released when the caller is finished with the
  * string.
@@ -4925,7 +5698,7 @@ typedef struct fiftyoneDegrees_component_t {
  * exception occurs. See exceptions.h
  * @return a pointer to a string in the collection item data structure.
  */
-EXTERNAL fiftyoneDegreesString* fiftyoneDegreesComponentGetName(
+EXTERNAL const fiftyoneDegreesString* fiftyoneDegreesComponentGetName(
 	fiftyoneDegreesCollection *stringsCollection,
 	fiftyoneDegreesComponent *component,
 	fiftyoneDegreesCollectionItem *item,
@@ -4941,7 +5714,8 @@ EXTERNAL fiftyoneDegreesString* fiftyoneDegreesComponentGetName(
  * exception occurs. See exceptions.h
  * @return pointer to a key value pair
  */
-const fiftyoneDegreesComponentKeyValuePair* fiftyoneDegreesComponentGetKeyValuePair(
+const fiftyoneDegreesComponentKeyValuePair* 
+fiftyoneDegreesComponentGetKeyValuePair(
 	fiftyoneDegreesComponent *component,
 	uint16_t index,
 	fiftyoneDegreesException *exception);
@@ -4967,15 +5741,15 @@ void fiftyoneDegreesComponentInitList(
  * Read a component from the file collection provided and store in the data
  * pointer. This method is used when creating a collection from file.
  * @param file collection to read from
- * @param offset of the component in the collection
+ * @param key of the component in the collection
  * @param data to store the resulting component in
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h
  * @return pointer to the component allocated within the data structure
  */
-void* fiftyoneDegreesComponentReadFromFile(
+EXTERNAL void* fiftyoneDegreesComponentReadFromFile(
 	const fiftyoneDegreesCollectionFile *file,
-	uint32_t offset,
+	const fiftyoneDegreesCollectionKey *key,
 	fiftyoneDegreesData *data,
 	fiftyoneDegreesException *exception);
 
@@ -4995,13 +5769,26 @@ EXTERNAL uint32_t fiftyoneDegreesComponentGetDefaultProfileId(
 	fiftyoneDegreesException *exception);
 
 /**
+ * Where the component's key value pairs relate to headers creates an array of
+ * pointers to the relevant headers in the same order as the key value pairs.
+ * @param component to get the headers for
+ * @param headers array to find the corresponding header in
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
+ */
+EXTERNAL fiftyoneDegreesHeaderPtrs* fiftyoneDegreesComponentGetHeaders(
+	fiftyoneDegreesComponent* component,
+	fiftyoneDegreesHeaders* headers,
+	fiftyoneDegreesException* exception);
+
+/**
  * @}
  */
 
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -5060,21 +5847,6 @@ EXTERNAL uint32_t fiftyoneDegreesComponentGetDefaultProfileId(
 #endif
 
 /**
- * Enum of property types.
- */
-typedef enum e_fiftyone_degrees_property_value_type {
-	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_STRING = 0, /**< String */
-	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_INTEGER = 1, /**< Integer */
-	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_DOUBLE = 2, /**< Double */
-	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_BOOLEAN = 3, /**< Boolean */
-	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_JAVASCRIPT = 4, /**< JavaScript string */
-	FIFTYONE_DEGREES_PROPERTY_VALUE_SINGLE_PRECISION_FLOAT = 5, /**< Single precision floating point value */
-	FIFTYONE_DEGREES_PROPERTY_VALUE_SINGLE_BYTE = 6, /**< Single byte value */
-	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_COORDINATE = 7, /**< Coordinate */
-	FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_IP_ADDRESS = 8 /**< Ip Range */
-} fiftyoneDegreesPropertyValueType;
-
-/**
  * Property structure containing all the meta data relating to a property.
  */
 #pragma pack(push, 1)
@@ -5110,6 +5882,17 @@ typedef struct property_t {
 #pragma pack(pop)
 
 /**
+ * Property structure containing stored type of a property.
+ */
+#pragma pack(push, 1)
+typedef struct property_type_record_t {
+	const uint32_t nameOffset; /**< The offset in the strings structure to the
+	                               property name */
+	const byte storedValueType; /**< The type of value the property is stored as */
+} fiftyoneDegreesPropertyTypeRecord;
+#pragma pack(pop)
+
+/**
  * Returns the string name of the property using the item provided. The 
  * collection item must be released when the caller is finished with the
  * string.
@@ -5120,10 +5903,36 @@ typedef struct property_t {
  * exception occurs. See exceptions.h.
  * @return a pointer to a string in the collection item data structure.
  */
-EXTERNAL fiftyoneDegreesString* fiftyoneDegreesPropertyGetName(
-	fiftyoneDegreesCollection *stringsCollection,
-	fiftyoneDegreesProperty *property,
+EXTERNAL const fiftyoneDegreesString* fiftyoneDegreesPropertyGetName(
+	const fiftyoneDegreesCollection *stringsCollection,
+	const fiftyoneDegreesProperty *property,
 	fiftyoneDegreesCollectionItem *item,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Returns the type the property is stored as.
+ * @param propertyTypesCollection collection of property types retrieved by offsets.
+ * @param property structure for the type required.
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ * @return a type the property is stored as.
+ */
+EXTERNAL fiftyoneDegreesPropertyValueType fiftyoneDegreesPropertyGetStoredType(
+	const fiftyoneDegreesCollection *propertyTypesCollection,
+	const fiftyoneDegreesProperty *property,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Returns the type the property is stored as.
+ * @param propertyTypesCollection collection of property types retrieved by offsets.
+ * @param index of the property to get
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ * @return a type the property is stored as.
+ */
+EXTERNAL fiftyoneDegreesPropertyValueType fiftyoneDegreesPropertyGetStoredTypeByIndex(
+	const fiftyoneDegreesCollection *propertyTypesCollection,
+	uint32_t index,
 	fiftyoneDegreesException *exception);
 
 /**
@@ -5137,9 +5946,9 @@ EXTERNAL fiftyoneDegreesString* fiftyoneDegreesPropertyGetName(
  * exception occurs. See exceptions.h.
  * @return a pointer to a string in the collection item data structure.
  */
-EXTERNAL fiftyoneDegreesString* fiftyoneDegreesPropertyGetDescription(
-	fiftyoneDegreesCollection *stringsCollection,
-	fiftyoneDegreesProperty *property,
+EXTERNAL const fiftyoneDegreesString* fiftyoneDegreesPropertyGetDescription(
+	const fiftyoneDegreesCollection *stringsCollection,
+	const fiftyoneDegreesProperty *property,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
 
@@ -5154,9 +5963,9 @@ EXTERNAL fiftyoneDegreesString* fiftyoneDegreesPropertyGetDescription(
  * exception occurs. See exceptions.h.
  * @return a pointer to a string in the collection item data structure.
  */
-EXTERNAL fiftyoneDegreesString* fiftyoneDegreesPropertyGetCategory(
-	fiftyoneDegreesCollection *stringsCollection,
-	fiftyoneDegreesProperty *property,
+EXTERNAL const fiftyoneDegreesString* fiftyoneDegreesPropertyGetCategory(
+	const fiftyoneDegreesCollection *stringsCollection,
+	const fiftyoneDegreesProperty *property,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
 
@@ -5171,9 +5980,9 @@ EXTERNAL fiftyoneDegreesString* fiftyoneDegreesPropertyGetCategory(
  * exception occurs. See exceptions.h.
  * @return a pointer to a string in the collection item data structure.
  */
-EXTERNAL fiftyoneDegreesString* fiftyoneDegreesPropertyGetUrl(
-	fiftyoneDegreesCollection *stringsCollection,
-	fiftyoneDegreesProperty *property,
+EXTERNAL const fiftyoneDegreesString* fiftyoneDegreesPropertyGetUrl(
+	const fiftyoneDegreesCollection *stringsCollection,
+	const fiftyoneDegreesProperty *property,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
 
@@ -5217,7 +6026,7 @@ EXTERNAL fiftyoneDegreesProperty* fiftyoneDegreesPropertyGet(
  * exception occurs. See exceptions.h.
  * @return the property requested or NULL
  */
-EXTERNAL fiftyoneDegreesProperty* fiftyoneDegreesPropertyGetByName(
+EXTERNAL const fiftyoneDegreesProperty* fiftyoneDegreesPropertyGetByName(
 	fiftyoneDegreesCollection *properties,
 	fiftyoneDegreesCollection *strings,
 	const char *requiredPropertyName,
@@ -5231,7 +6040,7 @@ EXTERNAL fiftyoneDegreesProperty* fiftyoneDegreesPropertyGetByName(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -5292,7 +6101,190 @@ EXTERNAL fiftyoneDegreesProperty* fiftyoneDegreesPropertyGetByName(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_STORED_BINARY_VALUE_H_INCLUDED
+#define FIFTYONE_DEGREES_STORED_BINARY_VALUE_H_INCLUDED
+
+/**
+ * @ingroup FiftyOneDegreesCommon
+ * @defgroup FiftyOneDegreesString String
+ *
+ * Byte array structures containing raw data bytes.
+ *
+ * @{
+ */
+
+#include <stdint.h>
+#include <ctype.h>
+
+/**
+ * Structure containing raw bytes and size from data files.
+ *
+ * @example
+ * String:
+ * 			Short – length – 10
+ * 			Byte value – first character of string – '5'
+ * @example
+ * Byte array:
+ * 			Short – length – 3
+ * 			Byte[] – bytes – [ 1, 2 ]
+ * @example
+ * IP (v4) address:
+ * 			Short – length – 5
+ * 			Byte[] – IP – [ 1, 2, 3, 4 ]
+ * @example
+ * WKB (value of  POINT(2.0 4.0)):
+ * 			Short – length - 21
+ * 			Byte[] – value – [
+ * 				0 (endianness),
+ * 				0, 0, 0, 1 (2D point),
+ * 				128, 0, 0, 0, 0, 0, 0, 0 (2.0 float),
+ * 				128, 16, 0, 0, 0, 0, 0, 0 (4.0 float)
+ * 			]
+ */
+#pragma pack(push, 1)
+typedef struct fiftyone_degrees_var_length_byte_array_t {
+ int16_t size; /**< Size of the byte array in memory (starting from 'firstByte') */
+ unsigned char firstByte; /**< The first byte of the array */
+} fiftyoneDegreesVarLengthByteArray;
+#pragma pack(pop)
+
+/**
+ * "Packed" value that can be present inside "strings" of dataset.
+ */
+#pragma pack(push, 1)
+typedef union fiftyone_degrees_stored_binary_value_t {
+ fiftyoneDegreesString stringValue; /**< String value (ASCII or UTF-8) */
+ fiftyoneDegreesVarLengthByteArray byteArrayValue; /**< Byte array value (e.g. IP or WKB) */
+ fiftyoneDegreesFloat floatValue; /**< single precision floating point value */
+ int32_t intValue; /**< Integer value */
+ int16_t shortValue; /**< Short value. Potentially half(-precision float). */
+ byte byteValue; /**< Single byte value. */
+} fiftyoneDegreesStoredBinaryValue;
+#pragma pack(pop)
+
+#ifndef FIFTYONE_DEGREES_MEMORY_ONLY
+
+/**
+ * Reads a binary value from the source file at the offset within the string
+ * structure.
+ * @param file collection to read from
+ * @param key of the binary value in the collection
+ * @param data to store the new string in
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ * @return a pointer to the string collection item or NULL if can't be found
+ * @note expects `data` to contain `fiftyoneDegreesPropertyValueType`
+ * matching the stored value type of the property this value belongs to.
+ */
+EXTERNAL void* fiftyoneDegreesStoredBinaryValueRead(
+ const fiftyoneDegreesCollectionFile *file,
+ const fiftyoneDegreesCollectionKey *key,
+ fiftyoneDegreesData *data,
+ fiftyoneDegreesException *exception);
+
+#endif
+
+/**
+ * Gets the binary value at the required offset from the collection provided.
+ * @param strings collection to get the string from
+ * @param offset of the binary value in the collection
+ * @param storedValueType format of byte array representation
+ * @param item to store the string in
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ * @return a pointer to binary value or NULL if the offset is not valid
+ */
+EXTERNAL const fiftyoneDegreesStoredBinaryValue* fiftyoneDegreesStoredBinaryValueGet(
+ const fiftyoneDegreesCollection *strings,
+ uint32_t offset,
+ fiftyoneDegreesPropertyValueType storedValueType,
+ fiftyoneDegreesCollectionItem *item,
+ fiftyoneDegreesException *exception);
+
+/**
+ * Function to compare the current binary value to the
+ * target string value using the text format.
+ * @param value the current binary value item
+ * @param storedValueType format of byte array representation
+ * @param target the target search value.
+ * @param tempBuilder temporary builder to stringify value into.
+ * @return 0 if they are equal, otherwise negative
+ * for smaller and positive for bigger
+ */
+EXTERNAL int fiftyoneDegreesStoredBinaryValueCompareWithString(
+ const fiftyoneDegreesStoredBinaryValue *value,
+ fiftyoneDegreesPropertyValueType storedValueType,
+ const char *target,
+ fiftyoneDegreesStringBuilder *tempBuilder,
+ fiftyoneDegreesException *exception);
+
+/**
+ * Function to convert the binary value to int when possible.
+ * @param value the current binary value item
+ * @param storedValueType format of byte array representation
+ * @param defaultValue fallback result.
+ * @return converted value (when possible)
+ * or default one (when type is not convertible).
+ */
+EXTERNAL int fiftyoneDegreesStoredBinaryValueToIntOrDefault(
+ const fiftyoneDegreesStoredBinaryValue *value,
+ fiftyoneDegreesPropertyValueType storedValueType,
+ int defaultValue);
+
+/**
+ * Function to convert the binary value to double when possible.
+ * @param value the current binary value item
+ * @param storedValueType format of byte array representation
+ * @param defaultValue fallback result.
+ * @return converted value (when possible)
+ * or default one (when type is not convertible).
+ */
+EXTERNAL double fiftyoneDegreesStoredBinaryValueToDoubleOrDefault(
+ const fiftyoneDegreesStoredBinaryValue *value,
+ fiftyoneDegreesPropertyValueType storedValueType,
+ double defaultValue);
+
+/**
+ * Function to convert the binary value to bool when possible.
+ * @param value the current binary value item
+ * @param storedValueType format of byte array representation
+ * @param defaultValue fallback result.
+ * @return converted value (when possible)
+ * or default one (when type is not convertible).
+ */
+EXTERNAL bool fiftyoneDegreesStoredBinaryValueToBoolOrDefault(
+ const fiftyoneDegreesStoredBinaryValue *value,
+ fiftyoneDegreesPropertyValueType storedValueType,
+ bool defaultValue);
+
+/**
+ * @}
+ */
+
+#endif
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -5363,6 +6355,169 @@ EXTERNAL fiftyoneDegreesProperty* fiftyoneDegreesPropertyGetByName(
 #pragma warning (default: 5105) 
 #pragma warning (pop)
 #endif
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_INDICES_H_INCLUDED
+#define FIFTYONE_DEGREES_INDICES_H_INCLUDED
+
+ /**
+  * @ingroup FiftyOneDegreesCommon
+  * @defgroup FiftyOneDegreesIndices Indices
+  *
+  * A look up structure for profile and property index to the first value 
+  * associated with the property and profile.
+  *
+  * ## Introduction
+  * 
+  * Data sets relate profiles to the values associated with them. Values are
+  * associated with properties. The values associated with a profile are 
+  * ordered in ascending order of property. Therefore when a request is made to
+  * obtain the value for a property and profile the values needed to be 
+  * searched using a binary search to find a value related to the property. 
+  * Then the list of prior values is checked until the first value for the 
+  * property is found.
+  * 
+  * The indices methods provide common functionality to create a structure
+  * that directly relates profile ids and required property indexes to the 
+  * first value index thus increasing the efficiency of retrieving values.
+  * 
+  * It is expected these methods will be used during data set initialization.
+  * 
+  * ## Structure
+  * 
+  * A sparse array of profile ids and required property indexes is used. Whilst
+  * this consumes more linear memory than a binary tree or other structure it 
+  * is extremely fast to retrieve values from. As the difference between the 
+  * lowest and highest profile id is relatively small the memory associated 
+  * with absent profile ids is considered justifiable considering the 
+  * performance benefit. A further optimization is to use the required property
+  * index rather than the index of all possible properties contained in the 
+  * data set. In most use cases the caller only requires a sub set of 
+  * properties to be available for retrieval.
+  * 
+  * ## Create
+  * 
+  * fiftyoneDegreesIndicesPropertyProfileCreate should be called once the data
+  * set is initialized with the required data structures. Memory is allocated
+  * by the method and a pointer to the index data structure is returned. The
+  * caller is not expected to use the returned data structure directly.
+  * 
+  * Some working memory is allocated during the indexing process. Therefore 
+  * this method must be called before a freeze on allocating new memory is
+  * required.
+  * 
+  * ## Free
+  * 
+  * fiftyoneDegreesIndicesPropertyProfileFree is used to free the memory used
+  * by the index returned from Create. Must be called during the freeing of the
+  * related data set.
+  * 
+  * ## Lookup
+  * 
+  * fiftyoneDegreesIndicesPropertyProfileLookup is used to return the index in
+  * the values associated with the profile for the profile id and the required
+  * property index.
+  * 
+  * @{
+  */
+
+#include <stdint.h>
+#ifdef _MSC_VER
+#pragma warning (push)
+#pragma warning (disable: 5105) 
+#include <windows.h>
+#pragma warning (default: 5105) 
+#pragma warning (pop)
+#endif
+
+/**
+ * Maps the profile index and the property index to the first value index of 
+ * the profile for the property. Is an array of uint32_t with entries equal to 
+ * the number of properties multiplied by the difference between the lowest and
+ * highest profile id.
+ */
+typedef struct fiftyone_degrees_index_property_profile{
+	uint32_t* valueIndexes; // array of value indexes
+	uint32_t availablePropertyCount; // number of available properties
+	uint32_t minProfileId; // minimum profile id
+	uint32_t maxProfileId; // maximum profile id
+	uint32_t profileCount; // total number of profiles
+	uint32_t size; // number elements in the valueIndexes array
+	uint32_t filled; // number of elements with values
+} fiftyoneDegreesIndicesPropertyProfile;
+
+/**
+ * Create an index for the profiles, available properties, and values provided 
+ * such that given the index to a property and profile the index of the first 
+ * value can be returned by calling fiftyoneDegreesIndicesPropertyProfileLookup.
+ * @param profiles collection of variable sized profiles to be indexed
+ * @param profileOffsets collection of fixed offsets to profiles to be indexed
+ * @param available properties provided by the caller
+ * @param values collection to be indexed
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
+ * @return pointer to the index memory structure
+ */
+EXTERNAL fiftyoneDegreesIndicesPropertyProfile*
+fiftyoneDegreesIndicesPropertyProfileCreate(
+	fiftyoneDegreesCollection* profiles,
+	fiftyoneDegreesCollection* profileOffsets,
+	fiftyoneDegreesPropertiesAvailable* available,
+	fiftyoneDegreesCollection* values,
+	fiftyoneDegreesException* exception);
+
+/**
+ * Frees an index previously created by 
+ * fiftyoneDegreesIndicesPropertyProfileCreate.
+ * @param index to be freed
+ */
+EXTERNAL void fiftyoneDegreesIndicesPropertyProfileFree(
+	fiftyoneDegreesIndicesPropertyProfile* index);
+
+/**
+ * For a given profile id and available property index returns the first value 
+ * index, or null if a first index can not be determined from the index. The
+ * indexes relate to the collections for profiles, properties, and values 
+ * provided to the fiftyoneDegreesIndicesPropertyProfileCreate method when the 
+ * index was created. The availablePropertyIndex is not the index of all 
+ * possible properties, but the index of the ones the data set was created 
+ * expecting to return.
+ * @param index from fiftyoneDegreesIndicesPropertyProfileCreate to use
+ * @param profileId the values need to relate to
+ * @param availablePropertyIndex in the list of required properties
+ * @return the index in the list of values for the profile for the first value 
+ * associated with the property
+ */
+EXTERNAL uint32_t fiftyoneDegreesIndicesPropertyProfileLookup(
+	fiftyoneDegreesIndicesPropertyProfile* index,
+	uint32_t profileId,
+	uint32_t availablePropertyIndex);
+
+/**
+ * @}
+ */
+
+#endif
 
 /**
  * Encapsulates a profile stored within a data set. A profile pertains to a
@@ -5391,6 +6546,31 @@ typedef struct fiftyoneDegrees_profile_offset_t {
 #pragma pack(pop)
 
 /**
+ * Function that extracts "pure" profile offset
+ * from a value inside `profileOffsets` collection
+ * @param rawProfileOffset a "raw" value retrieved from `profileOffsets`
+ * @return Offset to the profile in the profiles structure
+ */
+typedef uint32_t (*fiftyoneDegreesProfileOffsetValueExtractor)(const void *rawProfileOffset);
+
+/**
+ * Function that extracts "pure" profile offset
+ * from a fiftyoneDegreesProfileOffset.
+ * @param rawProfileOffset a "raw" ProfileOffset retrieved from `profileOffsets`
+ * @return Offset to the profile in the profiles structure
+ */
+uint32_t fiftyoneDegreesProfileOffsetToPureOffset(const void *rawProfileOffset);
+
+/**
+ * Function that extracts "pure" profile offset
+ * from a value (that starts with a "pure" profile offset)
+ * inside `profileOffsets` collection
+ * @param rawProfileOffset a "raw" value retrieved from `profileOffsets`
+ * @return Offset to the profile in the profiles structure
+ */
+uint32_t fiftyoneDegreesProfileOffsetAsPureOffset(const void *rawProfileOffset);
+
+/**
  * Definition of a callback function which is passed an item of a type 
  * determined by the iteration method.
  * @param state pointer to data needed by the method
@@ -5402,9 +6582,33 @@ typedef bool(*fiftyoneDegreesProfileIterateMethod)(
 	fiftyoneDegreesCollectionItem *item);
 
 /**
+ * Definition of a callback function which is passed the next values index for
+ * the profile.
+ * @param state pointer to data needed by the method
+ * @param valueIndex for the next value
+ * @return true if the iteration should continue, otherwise false to stop
+ */
+typedef bool(*fiftyoneDegreesProfileIterateValueIndexesMethod)(
+	void* state,
+	uint32_t valueIndex);
+
+/**
+ * Gets size of Profile with trailing values.
+ * @param initial pointer to profile "head"
+ * @return full (with tail) struct size
+ */
+#ifndef FIFTYONE_DEGREES_MEMORY_ONLY
+EXTERNAL uint32_t fiftyoneDegreesProfileGetFinalSize(
+	const void *initial,
+	fiftyoneDegreesException * const exception);
+#else
+#define fiftyoneDegreesProfileGetFinalSize NULL
+#endif
+
+/**
  * Gets the profile associated with the profileId or NULL if there is no
  * corresponding profile.
- * @param profileOffsets collection containing the profile offsets
+ * @param profileOffsets collection containing the profile offsets (with profile ID)
  * @param profiles collection containing the profiles referenced by the profile
  * offsets
  * @param profileId the unique id of the profile to fetch
@@ -5416,7 +6620,7 @@ typedef bool(*fiftyoneDegreesProfileIterateMethod)(
 EXTERNAL fiftyoneDegreesProfile* fiftyoneDegreesProfileGetByProfileId(
 	fiftyoneDegreesCollection *profileOffsets,
 	fiftyoneDegreesCollection *profiles,
-	const uint32_t profileId,
+	uint32_t profileId,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
 
@@ -5447,15 +6651,15 @@ EXTERNAL fiftyoneDegreesProfile* fiftyoneDegreesProfileGetByIndex(
  * Read a profile from the file collection provided and store in the data
  * pointer. This method is used when creating a collection from file.
  * @param file collection to read from
- * @param offset of the profile in the collection
+ * @param key of the profile in the collection
  * @param data to store the resulting profile in
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h
  * @return pointer to the profile allocated within the data structure
  */
-void* fiftyoneDegreesProfileReadFromFile(
+EXTERNAL void* fiftyoneDegreesProfileReadFromFile(
 	const fiftyoneDegreesCollectionFile *file,
-	uint32_t offset,
+	const fiftyoneDegreesCollectionKey *key,
 	fiftyoneDegreesData *data,
 	fiftyoneDegreesException *exception);
 #endif
@@ -5473,9 +6677,99 @@ void* fiftyoneDegreesProfileReadFromFile(
  * @return the number of matching values which have been iterated
  */
 EXTERNAL uint32_t fiftyoneDegreesProfileIterateValuesForProperty(
+	const fiftyoneDegreesCollection *values,
+	const fiftyoneDegreesProfile *profile,
+	const fiftyoneDegreesProperty *property,
+	void *state,
+	fiftyoneDegreesProfileIterateMethod callback,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Iterate over all values contained in the profile which relate to the
+ * specified property and profile, calling the callback method for each.
+ * @param values collection containing all values
+ * @param index array of property and profile first value indexes
+ * @param profileIndex the index of the profile
+ * @param availablePropertyIndex the index of the available property
+ * @param property which the values must relate to
+ * @param state pointer containing data needed for the callback method
+ * @param callback method to be called for each value
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
+ * @return the number of matching values which have been iterated
+ */
+EXTERNAL uint32_t fiftyoneDegreesProfileIterateValuesForPropertyWithIndex(
+	const fiftyoneDegreesCollection* values,
+	fiftyoneDegreesIndicesPropertyProfile* index,
+	uint32_t availablePropertyIndex,
+	const fiftyoneDegreesProfile* profile,
+	const fiftyoneDegreesProperty* property,
+	void* state,
+	fiftyoneDegreesProfileIterateMethod callback,
+	fiftyoneDegreesException* exception);
+
+/**
+ * Iterate all profiles which contain the specified value, calling the callback
+ * method for each.
+ * @param strings collection containing the strings referenced properties and
+ * values
+ * @param properties collection containing all properties
+ * @param propertyTypes collection containing types for all properties
+ * @param values collection containing all values
+ * @param profiles collection containing the profiles referenced by the profile
+ * offsets
+ * @param profileOffsets collection containing all profile offsets (with IDs)
+ * @param propertyName name of the property the value relates to
+ * @param valueName name of the value to iterate the profiles for
+ * @param state pointer to data needed by the callback method
+ * @param callback method to be called for each matching profile
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
+ * @return the number matching profiles which have been iterated
+ */
+EXTERNAL uint32_t fiftyoneDegreesProfileIterateProfilesForPropertyWithTypeAndValue(
+	fiftyoneDegreesCollection *strings,
+	fiftyoneDegreesCollection *properties,
+	fiftyoneDegreesCollection *propertyTypes,
 	fiftyoneDegreesCollection *values,
-	fiftyoneDegreesProfile *profile,
-	fiftyoneDegreesProperty *property,
+	fiftyoneDegreesCollection *profiles,
+	fiftyoneDegreesCollection *profileOffsets,
+	const char *propertyName,
+	const char* valueName,
+	void *state,
+	fiftyoneDegreesProfileIterateMethod callback,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Iterate all profiles which contain the specified value, calling the callback
+ * method for each.
+ * @param strings collection containing the strings referenced properties and
+ * values
+ * @param properties collection containing all properties
+ * @param propertyTypes collection containing types for all properties
+ * @param values collection containing all values
+ * @param profiles collection containing the profiles referenced by the profile
+ * offsets
+ * @param profileOffsets collection containing all profile offsets (any form)
+ * @param offsetValueExtractor converts `profileOffsets` value to "pure" offset
+ * @param propertyName name of the property the value relates to
+ * @param valueName name of the value to iterate the profiles for
+ * @param state pointer to data needed by the callback method
+ * @param callback method to be called for each matching profile
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
+ * @return the number matching profiles which have been iterated
+ */
+EXTERNAL uint32_t fiftyoneDegreesProfileIterateProfilesForPropertyWithTypeAndValueAndOffsetExtractor(
+	fiftyoneDegreesCollection *strings,
+	fiftyoneDegreesCollection *properties,
+	fiftyoneDegreesCollection *propertyTypes,
+	fiftyoneDegreesCollection *values,
+	fiftyoneDegreesCollection *profiles,
+	const fiftyoneDegreesCollection *profileOffsets,
+	fiftyoneDegreesProfileOffsetValueExtractor offsetValueExtractor,
+	const char *propertyName,
+	const char* valueName,
 	void *state,
 	fiftyoneDegreesProfileIterateMethod callback,
 	fiftyoneDegreesException *exception);
@@ -5513,18 +6807,56 @@ EXTERNAL uint32_t fiftyoneDegreesProfileIterateProfilesForPropertyAndValue(
 /**
  * Gets the offset in the profiles collection for the profile with the
  * profileId or NULL if there is no corresponding profile.
- * @param profileOffsets collection containing the profile offsets
+ * @param profileOffsets collection containing the profile offsets (with ID)
  * @param profileId the unique id of the profile to fetch
  * @param profileOffset pointer to the integer to set the offset in
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h
  * @return pointer to the profile offset or NULL
  */
-uint32_t* fiftyoneDegreesProfileGetOffsetForProfileId(
+EXTERNAL uint32_t* fiftyoneDegreesProfileGetOffsetForProfileId(
 	fiftyoneDegreesCollection *profileOffsets,
-	const uint32_t profileId,
+	uint32_t profileId,
 	uint32_t *profileOffset,
 	fiftyoneDegreesException *exception);
+
+/**
+ * Gets the profile from the profiles collection
+ * with the profileId or NULL if there is no corresponding profile.
+ * @param profileOffsets collection containing the profile offsets (without ID)
+ * @param profiles collection containing the profiles referenced by the profile
+ * offsets
+ * @param profileId the unique id of the profile to fetch
+ * @param outProfileItem pointer to the item to store profile reference in
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
+ * @return pointer to the profile or NULL
+ */
+EXTERNAL fiftyoneDegreesProfile * fiftyoneDegreesProfileGetByProfileIdIndirect(
+	fiftyoneDegreesCollection *profileOffsets,
+	fiftyoneDegreesCollection *profiles,
+	uint32_t profileId,
+	fiftyoneDegreesCollectionItem *outProfileItem,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Calls the callback for every value index available for the profile.
+ * @param profile to return value indexes for
+ * @param available required properties
+ * @param values collection containing all values
+ * @param state pointer to data needed by the callback method
+ * @param callback method to be called for each value index
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
+ * @return number of times the callback was called.
+ */
+EXTERNAL uint32_t fiftyoneDegreesProfileIterateValueIndexes(
+	fiftyoneDegreesProfile* profile,
+	fiftyoneDegreesPropertiesAvailable* available,
+	fiftyoneDegreesCollection* values,
+	void* state,
+	fiftyoneDegreesProfileIterateValueIndexesMethod callback,
+	fiftyoneDegreesException* exception);
 
 /**
  * @}
@@ -5546,6 +6878,25 @@ typedef struct fiftyoneDegrees_value_t {
 #pragma pack(pop)
 
 /**
+ * Returns the contents of the value using the item provided. The
+ * collection item must be released when the caller is finished with the
+ * string.
+ * @param strings collection of strings retrieved by offsets.
+ * @param value structure for the name required.
+ * @param storedValueType format of byte array representation.
+ * @param item used to store the resulting string in.
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ * @return a pointer to a contents in the collection item data structure.
+ */
+EXTERNAL const fiftyoneDegreesStoredBinaryValue* fiftyoneDegreesValueGetContent(
+	const fiftyoneDegreesCollection *strings,
+	const fiftyoneDegreesValue *value,
+	fiftyoneDegreesPropertyValueType storedValueType,
+	fiftyoneDegreesCollectionItem *item,
+	fiftyoneDegreesException *exception);
+
+/**
  * Returns the string name of the value using the item provided. The
  * collection item must be released when the caller is finished with the
  * string.
@@ -5556,9 +6907,9 @@ typedef struct fiftyoneDegrees_value_t {
  * exception occurs. See exceptions.h.
  * @return a pointer to a string in the collection item data structure.
  */
-EXTERNAL fiftyoneDegreesString* fiftyoneDegreesValueGetName(
-	fiftyoneDegreesCollection *strings,
-	fiftyoneDegreesValue *value,
+EXTERNAL const fiftyoneDegreesString* fiftyoneDegreesValueGetName(
+	const fiftyoneDegreesCollection *strings,
+	const fiftyoneDegreesValue *value,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
 
@@ -5573,9 +6924,9 @@ EXTERNAL fiftyoneDegreesString* fiftyoneDegreesValueGetName(
  * exception occurs. See exceptions.h.
  * @return a pointer to a string in the collection item data structure.
  */
-EXTERNAL fiftyoneDegreesString* fiftyoneDegreesValueGetDescription(
-	fiftyoneDegreesCollection *strings,
-	fiftyoneDegreesValue *value,
+EXTERNAL const fiftyoneDegreesString* fiftyoneDegreesValueGetDescription(
+	const fiftyoneDegreesCollection *strings,
+	const fiftyoneDegreesValue *value,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
 
@@ -5590,9 +6941,9 @@ EXTERNAL fiftyoneDegreesString* fiftyoneDegreesValueGetDescription(
  * exception occurs. See exceptions.h.
  * @return a pointer to a string in the collection item data structure.
  */
-EXTERNAL fiftyoneDegreesString* fiftyoneDegreesValueGetUrl(
-	fiftyoneDegreesCollection *strings,
-	fiftyoneDegreesValue *value,
+EXTERNAL const fiftyoneDegreesString* fiftyoneDegreesValueGetUrl(
+	const fiftyoneDegreesCollection *strings,
+	const fiftyoneDegreesValue *value,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
 
@@ -5605,9 +6956,30 @@ EXTERNAL fiftyoneDegreesString* fiftyoneDegreesValueGetUrl(
  * exception occurs. See exceptions.h.
  * @return pointer to the value or NULL
  */
-EXTERNAL fiftyoneDegreesValue* fiftyoneDegreesValueGet(
-	fiftyoneDegreesCollection *values,
+EXTERNAL const fiftyoneDegreesValue* fiftyoneDegreesValueGet(
+	const fiftyoneDegreesCollection *values,
 	uint32_t valueIndex,
+	fiftyoneDegreesCollectionItem *item,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Get the value for the requested name from the collection provided.
+ * @param values collection to get the value from
+ * @param strings collection containing the value names
+ * @param property that the value relates to
+ * @param storedValueType format of byte array representation.
+ * @param valueName name of the value to get
+ * @param item to store the value in
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
+ * @return pointer to the value or NULL if it does not exist
+ */
+EXTERNAL const fiftyoneDegreesValue* fiftyoneDegreesValueGetByNameAndType(
+	const fiftyoneDegreesCollection *values,
+	const fiftyoneDegreesCollection *strings,
+	const fiftyoneDegreesProperty *property,
+	fiftyoneDegreesPropertyValueType storedValueType,
+	const char *valueName,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception);
 
@@ -5622,12 +6994,31 @@ EXTERNAL fiftyoneDegreesValue* fiftyoneDegreesValueGet(
  * exception occurs. See exceptions.h
  * @return pointer to the value or NULL if it does not exist
  */
-EXTERNAL fiftyoneDegreesValue* fiftyoneDegreesValueGetByName(
-	fiftyoneDegreesCollection *values,
-	fiftyoneDegreesCollection *strings,
-	fiftyoneDegreesProperty *property,
+EXTERNAL const fiftyoneDegreesValue* fiftyoneDegreesValueGetByName(
+	const fiftyoneDegreesCollection *values,
+	const fiftyoneDegreesCollection *strings,
+	const fiftyoneDegreesProperty *property,
 	const char *valueName,
 	fiftyoneDegreesCollectionItem *item,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Get index of the value for the requested name from the collection provided.
+ * @param values collection to get the value from
+ * @param strings collection containing the value names
+ * @param property that the value relates to
+ * @param storedValueType format of byte array representation
+ * @param valueName name of the value to get
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
+ * @return the 0 based index of the item if found, otherwise -1
+ */
+EXTERNAL long fiftyoneDegreesValueGetIndexByNameAndType(
+	const fiftyoneDegreesCollection *values,
+	const fiftyoneDegreesCollection *strings,
+	const fiftyoneDegreesProperty *property,
+	fiftyoneDegreesPropertyValueType storedValueType,
+	const char *valueName,
 	fiftyoneDegreesException *exception);
 
 /**
@@ -5654,7 +7045,7 @@ EXTERNAL long fiftyoneDegreesValueGetIndexByName(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -5911,12 +7302,12 @@ EXTERNAL void fiftyoneDegreesOverrideValuesReset(
  * the override method supplied.
  * @param evidence to extract the profile ids from
  * @param state pointer to pass to the override method
- * @param override method called to override a profile id
+ * @param callback method called to override a profile id
  */
 EXTERNAL void fiftyoneDegreesOverrideProfileIds(
 	fiftyoneDegreesEvidenceKeyValuePairArray *evidence, 
 	void *state, 
-	fiftyoneDegreesOverrideProfileIdMethod override);
+	fiftyoneDegreesOverrideProfileIdMethod callback);
 
 /**
  * @}
@@ -5925,7 +7316,129 @@ EXTERNAL void fiftyoneDegreesOverrideProfileIds(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_JSON_H_INCLUDED
+#define FIFTYONE_DEGREES_JSON_H_INCLUDED
+
+ /**
+  * @ingroup FiftyOneDegreesCommon
+  * @defgroup FiftyOneDegreesJson JSON
+  *
+  * JSON methods
+  *
+  * ## Introduction
+  * 
+  * Contains common methods to create JSON documents, add properties, add 
+  * either single or list values to properties. String values are escaped to
+  * comply with the JSON specification.
+  * 
+  * ## Data Structures
+  * 
+  * A single data structure is used with members for a) the output buffer, and 
+  * b) the reference data. 
+  * 
+  * The output buffer is represented as a pointer and a length. An additional
+  * member is used to record the number of characters that would be needed to
+  * complete the creation of a valid JSON response. This can be used by the 
+  * caller to increase the buffer size if not big enough and call the related
+  * methods a subsequent time. 
+  * 
+  * Reference data for the property being added, the values being added, and
+  * a collection of strings is also provided.
+  * 
+  * @{
+  */
+
+#include <stdint.h>
+#ifdef _MSC_VER
+#pragma warning (push)
+#pragma warning (disable: 5105) 
+#include <windows.h>
+#pragma warning (default: 5105) 
+#pragma warning (pop)
+#endif
+
+/**
+ * Structure used to populated a JSON string for all required properties and 
+ * values. The implementation will always check to determine if sufficient 
+ * characters remain in the buffer before adding characters. The charsAdded
+ * field is always updated to reflect the number of characters that would be
+ * needed in the buffer if all the values were to be written. This is needed
+ * to determine when the buffer provided needs to be larger.
+ */
+typedef struct fiftyone_degrees_json {
+	fiftyoneDegreesStringBuilder builder; /**< Output buffer */
+	fiftyoneDegreesCollection* strings; /**< Collection of strings */
+	fiftyoneDegreesProperty* property; /**< The property being added */
+	fiftyoneDegreesList* values; /**< The values for the property */
+	fiftyoneDegreesException* exception; /**< Exception */
+	fiftyoneDegreesPropertyValueType storedPropertyType; /**< Stored type of the values for the property */
+} fiftyoneDegreesJson;
+
+/**
+ * Writes the start of the JSON document characters to the buffer in json.
+ * @param json data structure
+ */
+EXTERNAL void fiftyoneDegreesJsonDocumentStart(fiftyoneDegreesJson* json);
+
+/**
+ * Writes the end of the JSON document characters to the buffer in json.
+ * @param json data structure
+ */
+EXTERNAL void fiftyoneDegreesJsonDocumentEnd(fiftyoneDegreesJson* json);
+
+/**
+ * Writes the start of the property in json->property to the buffer in json.
+ * @param json data structure
+ */
+EXTERNAL void fiftyoneDegreesJsonPropertyStart(fiftyoneDegreesJson* json);
+
+/**
+ * Writes the end of the property in json->property to the buffer in json.
+ * @param json data structure
+ */
+EXTERNAL void fiftyoneDegreesJsonPropertyEnd(fiftyoneDegreesJson* json);
+
+/**
+ * Writes the values in the json->values list to the buffer in json.
+ * @param json data structure
+ */
+EXTERNAL void fiftyoneDegreesJsonPropertyValues(fiftyoneDegreesJson* json);
+
+/**
+ * Writes the a property separator to the buffer in json.
+ * @param json data structure
+ */
+EXTERNAL void fiftyoneDegreesJsonPropertySeparator(fiftyoneDegreesJson* json);
+
+/**
+ * @}
+ */
+
+#endif
+
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -5969,7 +7482,7 @@ EXTERNAL void fiftyoneDegreesOverrideProfileIds(
 #include <stdint.h>
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -6032,6 +7545,8 @@ typedef struct fiftyone_degrees_config_base_t {
 	const char **tempDirs; /**< Array of temp directories which can be used in
 	                           order of preference. */
 	int tempDirCount; /**< Number of directories in the tempDirs array. */
+	bool propertyValueIndex; /**< Indicates if an index to values for property 
+							     and profiles should be created. */
 } fiftyoneDegreesConfigBase;
 
 /** Default value for the #FIFTYONE_DEGREES_CONFIG_USE_TEMP_FILE macro. */
@@ -6059,16 +7574,30 @@ FIFTYONE_DEGREES_CONFIG_USE_TEMP_FILE_DEFAULT
 FIFTYONE_DEGREES_CONFIG_ALL_IN_MEMORY_DEFAULT
 
 /**
- * Default value for the #fiftyoneDegreesConfigBase structure.
+ * Default value for the #fiftyoneDegreesConfigBase structure with index.
  */
-#define FIFTYONE_DEGREES_CONFIG_DEFAULT \
+#define FIFTYONE_DEGREES_CONFIG_DEFAULT_WITH_INDEX \
 	FIFTYONE_DEGREES_CONFIG_ALL_IN_MEMORY, /* allInMemory */ \
 	true, /* usesUpperPrefixedHeaders */ \
 	false, /* freeData */ \
 	FIFTYONE_DEGREES_CONFIG_USE_TEMP_FILE, /* useTempFile */ \
 	false, /* reuseTempFile */ \
 	NULL, /* tempDirs */ \
-	0 /* tempDirCount */
+	0, /* tempDirCount */ \
+	true /* propertyValueIndex */
+
+ /**
+  * Default value for the #fiftyoneDegreesConfigBase structure without index.
+  */
+#define FIFTYONE_DEGREES_CONFIG_DEFAULT_NO_INDEX \
+	FIFTYONE_DEGREES_CONFIG_ALL_IN_MEMORY, /* allInMemory */ \
+	true, /* usesUpperPrefixedHeaders */ \
+	false, /* freeData */ \
+	FIFTYONE_DEGREES_CONFIG_USE_TEMP_FILE, /* useTempFile */ \
+	false, /* reuseTempFile */ \
+	NULL, /* tempDirs */ \
+	0, /* tempDirCount */ \
+	false /* propertyValueIndex */
 
 /**
  * @}
@@ -6091,6 +7620,12 @@ typedef struct fiftyone_degrees_config_device_detecton_t {
 	bool allowUnmatched; /**< True if there should be at least one matched node
 						 in order for the results to be considered valid. By
 						 default, this is false */
+	bool processSpecialEvidence; /**< Some evidence requires additional 
+									processing that doesn't need to be checked
+									for if being used in an environment that
+									doesn't generate it. For example; GHEV and 
+									SUA query evidence. By default, this is 
+									true. */
 } fiftyoneDegreesConfigDeviceDetection;
 
 /** Default value for the #FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_UPDATE macro. */
@@ -6101,6 +7636,10 @@ typedef struct fiftyone_degrees_config_device_detecton_t {
 #define FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_DEFAULT_UNMATCHED false
 #endif
 
+#ifndef FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_DEFAULT_SPECIAL_EVIDENCE
+#define FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_DEFAULT_SPECIAL_EVIDENCE true
+#endif
+
 /**
  * Update matched User-Agent setting used in the default configuration macro
  * #FIFTYONE_DEGREES_DEVICE_DETECTION_CONFIG_DEFAULT.
@@ -6109,13 +7648,26 @@ typedef struct fiftyone_degrees_config_device_detecton_t {
 FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_UPDATE_DEFAULT
 
 /**
- * Default value for the #fiftyoneDegreesConfigDeviceDetection structure.
+ * Default value for the #fiftyoneDegreesConfigDeviceDetection structure with
+ * index
  */
-#define FIFTYONE_DEGREES_DEVICE_DETECTION_CONFIG_DEFAULT \
-	FIFTYONE_DEGREES_CONFIG_DEFAULT, \
+#define FIFTYONE_DEGREES_DEVICE_DETECTION_CONFIG_DEFAULT_WITH_INDEX \
+	FIFTYONE_DEGREES_CONFIG_DEFAULT_WITH_INDEX, \
 	FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_UPDATE, \
 	500, /* Default to 500 characters for the matched User-Agent */ \
-	FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_DEFAULT_UNMATCHED
+	FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_DEFAULT_UNMATCHED, \
+	FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_DEFAULT_SPECIAL_EVIDENCE
+
+ /**
+  * Default value for the #fiftyoneDegreesConfigDeviceDetection structure 
+  * without index.
+  */
+#define FIFTYONE_DEGREES_DEVICE_DETECTION_CONFIG_DEFAULT_NO_INDEX \
+	FIFTYONE_DEGREES_CONFIG_DEFAULT_NO_INDEX, \
+	FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_UPDATE, \
+	500, /* Default to 500 characters for the matched User-Agent */ \
+	FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_DEFAULT_UNMATCHED, \
+	FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_DEFAULT_SPECIAL_EVIDENCE
 
 /**
  * @}
@@ -6124,7 +7676,7 @@ FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_UPDATE_DEFAULT
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -6150,7 +7702,7 @@ FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_UPDATE_DEFAULT
 #include <stdlib.h>
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -6236,246 +7788,6 @@ FIFTYONE_DEGREES_CONFIG_DEVICE_DETECTION_UPDATE_DEFAULT
  * @{
  */
 
-/* *********************************************************************
- * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
- * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
- *
- * This Original Work is licensed under the European Union Public Licence
- * (EUPL) v.1.2 and is subject to its terms as set out below.
- *
- * If a copy of the EUPL was not distributed with this file, You can obtain
- * one at https://opensource.org/licenses/EUPL-1.2.
- *
- * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
- * amended by the European Commission) shall be deemed incompatible for
- * the purposes of the Work and the provisions of the compatibility
- * clause in Article 5 of the EUPL shall not apply.
- *
- * If using the Work as, or as part of, a network application, by
- * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading,
- * such notice(s) shall fulfill the requirements of that article.
- * ********************************************************************* */
-
-#ifndef FIFTYONE_DEGREES_HEADERS_H_INCLUDED
-#define FIFTYONE_DEGREES_HEADERS_H_INCLUDED
-
-/**
- * @ingroup FiftyOneDegreesCommon
- * @defgroup FiftyOneDegreesHeaders Headers
- *
- * Common form of evidence in 51Degrees engines.
- *
- * ## Introduction
- *
- * HTTP headers are a common form of evidence, so required headers have their
- * own structure and methods. By storing the unique id of headers, storing
- * duplicates of the same header can be avoided. Duplicates can occur as a
- * result of different cases or prefixes e.g. `User-Agent`, `user-agent` and
- * `HTTP_user-agent` are all the same header.
- *
- * ## Creation
- *
- * A header structure is created using the #fiftyoneDegreesHeadersCreate
- * method. This takes a state and a method used to extract the unique headers
- * from the state. See the method description for more details.
- *
- * ## Get
- *
- * A header can be fetched using it's unique id with the
- * #fiftyoneDegreesHeadersGetHeaderFromUniqueId method.
- *
- * The index of a header in the unique headers structure can also be fetched
- * using the #fiftyoneDegreesHeaderGetIndex method.
- *
- * ## Free
- *
- * Once a headers structure is finished with, it is released using the
- * #fiftyoneDegreesHeadersFree method.
- *
- * ## Usage Example
- *
- * ```
- * fiftyoneDegreesHeadersGetMethod getHeaderId;
- * void *state;
- *
- * // Create the headers structure
- * fiftyoneDegreesHeaders *headers = fiftyoneDegreesHeadersCreate(
- *     false,
- *     state,
- *     getHeaderId);
- *
- * // Get the index of a header
- * int index = fiftyoneDegreesHeaderGetIndex(
- *     headers,
- *     "user-agent",
- *     strlen("user-agent"));
- *
- * // Check that the header exists in the structure
- * if (index >= 0) {
- *
- *     // Do something with the header
- *     // ...
- * }
- *
- * // Free the headers structure
- * fiftyoneDegreesHeadersFree(headers);
- * ```
- *
- * @{
- */
-
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#ifdef _MSC_FULL_VER
-#include <string.h>
-#else
-#include <strings.h>
-#define _stricmp strcasecmp
-#define _strnicmp strncasecmp
-#endif
-
-/**
- * Null or PSEUDO_HEADER_SEP terminated string segment within a header.
- */
-typedef struct fiftyone_degrees_header_segment_t {
-	const char* segment; /**< Segment in the name string */
-	size_t length; /**< Length of the segment in the name strings without the 
-				        terminating character */
-} fiftyoneDegreesHeaderSegment;
-
-FIFTYONE_DEGREES_ARRAY_TYPE(
-	fiftyoneDegreesHeaderSegment, 
-	);
-
-typedef uint32_t fiftyoneDegreesHeaderID;
-
-/**
- * Header structure to identify a header that either comes directly from the
- * data set, or one that forms a pseudo header.
- */
-typedef struct fiftyone_degrees_header_t {
-	const char* name; /**< Name of the header or pseudo header field as a
-					       null terminated string */
-	size_t nameLength; /**< Length of the name string excluding the
-							terminating null */
-	fiftyoneDegreesHeaderSegmentArray* segments; /**< Segments within the 
-												      name */
-	bool isDataSet; /**< True if the header originates from the data set */
-    fiftyoneDegreesHeaderID uniqueId; /** < Unique id provided by the data set */
-} fiftyoneDegreesHeader;
-
-#define FIFTYONE_DEGREES_HEADERS_MEMBERS \
-bool expectUpperPrefixedHeaders; /**< True if the headers structure should
-								 expect input header to be prefixed with
-								 'HTTP_' */ \
-uint32_t pseudoHeadersCount; /**< Count of the number of pseudo headers */
-
-FIFTYONE_DEGREES_ARRAY_TYPE(
-	fiftyoneDegreesHeader, 
-	FIFTYONE_DEGREES_HEADERS_MEMBERS);
-
-/**
- * Array of headers used to easily access and track the size of the array.
- */
-typedef fiftyoneDegreesHeaderArray fiftyoneDegreesHeaders;
-
-/**
- * Gets the unique id and name of the header at the requested index.
- * @param state pointer to data used by the method
- * @param index of the header to get
- * @param nameItem pointer to the collection item to populate with the name of
- * the header
- * @return unique id of the header
- */
-typedef long(*fiftyoneDegreesHeadersGetMethod)(
-	void *state,
-	uint32_t index, 
-	fiftyoneDegreesCollectionItem *nameItem);
-
-/**
- * Returns the number of bytes that will be allocated for a headers structure
- * created using the #fiftyoneDegreesHeadersCreate method.
- * @param count number of headers in the structure
- * @return number of bytes needed
- */
-EXTERNAL size_t fiftyoneDegreesHeadersSize(int count);
-
-/**
- * Check if a header is a pseudo header.
- * @param headerName name of the header
- * @return whether a header is a pseudo header.
- */
-EXTERNAL bool fiftyoneDegreesHeadersIsPseudo(const char *headerName);
-
-/**
- * Creates a new headers instance configured with the unique HTTP names needed
- * from evidence. If the useUpperPrefixedHeaders flag is true then checks for 
- * the presence of HTTP headers will also include checking for HTTP_ as a
- * prefix to the header key. If header is a pseudo header, the indices of
- * actual headers that form this header will be constructed.
- *
- * @param useUpperPrefixedHeaders true if HTTP_ prefixes should be checked
- * @param state pointer used by getHeaderMethod to retrieve the header integer
- * @param get used to return the HTTP header unique integer
- * @return a new instance of #fiftyoneDegreesHeaders ready to be used to filter 
- * HTTP headers.
- */
-EXTERNAL fiftyoneDegreesHeaders* fiftyoneDegreesHeadersCreate(
-	bool useUpperPrefixedHeaders,
-	void *state,
-	fiftyoneDegreesHeadersGetMethod get);
-
-/**
- * Provides the integer index of the HTTP header name.
- * @param headers structure created by #fiftyoneDegreesHeadersCreate
- * @param httpHeaderName of the header whose index is required
- * @param length number of characters in httpHeaderName
- * @return the index of the HTTP header name, or -1 if the name does not exist
- */
-EXTERNAL int fiftyoneDegreesHeaderGetIndex(
-	fiftyoneDegreesHeaders *headers,
-	const char* httpHeaderName,
-	size_t length);
-
-/**
- * Gets a pointer to the header in the headers structure with a unique id
- * matching the one provided. If the headers structure does not contain a
- * header with the unique id, NULL will be returned.
- * This method assumes that the headers in the structure are unique, if they
- * are not, then the first matching header will be returned.
- * @param headers pointer to the headers structure to search
- * @param uniqueId id to search for
- * @return pointer to the matching header, or NULL
- */
-EXTERNAL fiftyoneDegreesHeader* fiftyoneDegreesHeadersGetHeaderFromUniqueId(
-	fiftyoneDegreesHeaders *headers,
-    fiftyoneDegreesHeaderID uniqueId);
-
-/**
- * Frees the memory allocated by the #fiftyoneDegreesHeadersCreate method.
- *
- * @param headers structure created by #fiftyoneDegreesHeadersCreate
- */
-EXTERNAL void fiftyoneDegreesHeadersFree(fiftyoneDegreesHeaders *headers);
-
-/**
- * Determines if the key of an evidence pair is an HTTP header.
- * @param state results instance to check against
- * @param pair the evidence pair to be checked
- * @return true if the evidence relates to an HTTP header, otherwise false.
- */
-EXTERNAL bool fiftyoneDegreesHeadersIsHttp(
-	void *state,
-	fiftyoneDegreesEvidenceKeyValuePair *pair);
-
-/**
- * @}
- */
-
-#endif
 
 /**
  * Base data set structure which contains the 'must have's for all data sets.
@@ -6507,6 +7819,10 @@ typedef struct fiftyone_degrees_dataset_base_t {
 	fiftyoneDegreesOverridePropertyArray *overridable; /**< Array of properties
 													   that can be 
 													   overridden */
+	fiftyoneDegreesIndicesPropertyProfile* indexPropertyProfile; /**< Index to 
+															   look up profile 
+															   values by 
+															   property */
     const void *config; /**< Pointer to the config used to create the dataset */
 } fiftyoneDegreesDataSetBase;
 
@@ -6531,7 +7847,7 @@ typedef fiftyoneDegreesStatusCode(*fiftyoneDegreesDataSetInitFromMemoryMethod)(
 	const void *config,
 	fiftyoneDegreesPropertiesRequired *properties,
 	void *memory,
-	long size,
+	fiftyoneDegreesFileOffset size,
 	fiftyoneDegreesException *exception);
 
 /**
@@ -6589,6 +7905,8 @@ fiftyoneDegreesStatusCode fiftyoneDegreesDataSetInitProperties(
  * @param state pointer to data which is needed by getPropertymethod
  * @param getHeaderMethod method used to retrieve the unique id and name of a
  * header at a specified index from the data set
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
  * @return the status associated with the header initialisation. Any value
  * other than #FIFTYONE_DEGREES_STATUS_SUCCESS  means the headers were not
  * initialised correctly
@@ -6596,7 +7914,8 @@ fiftyoneDegreesStatusCode fiftyoneDegreesDataSetInitProperties(
 fiftyoneDegreesStatusCode fiftyoneDegreesDataSetInitHeaders(
 	fiftyoneDegreesDataSetBase *dataSet,
 	void *state,
-	fiftyoneDegreesHeadersGetMethod getHeaderMethod);
+	fiftyoneDegreesHeadersGetMethod getHeaderMethod,
+	fiftyoneDegreesException* exception);
 
 /**
  * Initialses the data set from data stored on file.
@@ -6614,7 +7933,7 @@ fiftyoneDegreesStatusCode fiftyoneDegreesDataSetInitHeaders(
 fiftyoneDegreesStatusCode fiftyoneDegreesDataSetInitFromFile(
 	fiftyoneDegreesDataSetBase *dataSet,
 	const char *fileName,
-	long bytesToCompare);
+	fiftyoneDegreesFileOffset bytesToCompare);
 
 /**
  * Initialses the data set from data stored in continuous memory.
@@ -6683,7 +8002,7 @@ void fiftyoneDegreesDataSetFree(fiftyoneDegreesDataSetBase *dataSet);
 fiftyoneDegreesStatusCode fiftyoneDegreesDataSetReloadManagerFromMemory(
 	fiftyoneDegreesResourceManager *manager,
 	void *source,
-	long length,
+	fiftyoneDegreesFileOffset length,
 	size_t dataSetSize,
 	fiftyoneDegreesDataSetInitFromMemoryMethod initDataSet,
 	fiftyoneDegreesException *exception);
@@ -6744,7 +8063,7 @@ fiftyoneDegreesStatusCode fiftyoneDegreesDataSetReloadManagerFromFile(
 fiftyoneDegreesStatusCode fiftyoneDegrees##t##ReloadManagerFromMemory( \
 fiftyoneDegreesResourceManager *manager, \
 void *source, \
-long length, \
+fiftyoneDegreesFileOffset length, \
 fiftyoneDegreesException *exception) { \
 	return fiftyoneDegreesDataSetReloadManagerFromMemory( \
 		manager, \
@@ -6838,8 +8157,15 @@ fiftyoneDegreesException *exception) { \
  */
 typedef struct fiftyone_degrees_dataset_device_detection_t {
 	fiftyoneDegreesDataSetBase b; /**< Base structure members */
-	int uniqueUserAgentHeaderIndex; /**< The unique HTTP header for the field
-									name "User-Agent" */
+	uint32_t uniqueUserAgentHeaderIndex; /**< The unique HTTP header for the 
+										 field name "User-Agent" */
+	fiftyoneDegreesHeaderPtrArray *ghevHeaders; /**< Array of get high entropy 
+											    values headers that must all be 
+											    present to prevent the 
+											    gethighentropyvalues javascript 
+											    from being returned */
+	int ghevRequiredPropertyIndex; /**< Required property index for 
+						   		   JavascriptGetHighEntropyValues */
 } fiftyoneDegreesDataSetDeviceDetection;
 
 /**
@@ -6877,6 +8203,8 @@ fiftyoneDegreesDataSetDeviceDetectionGet(
  * or not a property is eligible to be overridden
  * @param getEvidencePropertiesMethod method used to populate the list of
  * evidence required for a property in the data set
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h
  * @return the status associated with the header initialisation. Any value
  * other than #FIFTYONE_DEGREES_STATUS_SUCCESS  means the headers were not
  * initialised correctly
@@ -6889,7 +8217,8 @@ fiftyoneDegreesDataSetDeviceDetectionInitPropertiesAndHeaders(
 	fiftyoneDegreesPropertiesGetMethod getPropertyMethod,
 	fiftyoneDegreesHeadersGetMethod getHeaderMethod,
 	fiftyoneDegreesOverridesFilterMethod overridesFilter,
-    fiftyoneDegreesEvidencePropertiesGetMethod getEvidencePropertiesMethod) ;
+    fiftyoneDegreesEvidencePropertiesGetMethod getEvidencePropertiesMethod,
+	fiftyoneDegreesException* exception);
 
 /**
  * @copydoc fiftyoneDegreesDataSetReset
@@ -6904,7 +8233,7 @@ void fiftyoneDegreesDataSetDeviceDetectionReset(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -6943,7 +8272,7 @@ void fiftyoneDegreesDataSetDeviceDetectionReset(
 
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -7024,6 +8353,10 @@ typedef enum e_fiftyone_degrees_results_no_value_reason {
 														   contain a null
 														   profile for the
 														   required component */
+	FIFTYONE_DEGREES_RESULTS_NO_VALUE_REASON_HIGH_RISK, /**< The match is
+	                                                    deemed high risk of
+														containing incorrect or
+														misleading results. */
 	FIFTYONE_DEGREES_RESULTS_NO_VALUE_REASON_UNKNOWN /**< None of the above */
 } fiftyoneDegreesResultsNoValueReason;
 
@@ -7056,8 +8389,7 @@ EXTERNAL fiftyoneDegreesResultsBase* fiftyoneDegreesResultsInit(
  */
 typedef struct fiftyone_degrees_result_user_agent_t {
 	int uniqueHttpHeaderIndex; /**< Index in the headers collection of the data
-							   set to the HTTP header field
-							   i.e. User-Agent */
+							   set to the HTTP header fieldi.e. User-Agent */
 	char *matchedUserAgent; /**< Pointer to the matched User-Agent if requested
 							by setting the updateMatchedUserAgent config option
 							to true, otherwise NULL. The memory allocated to
@@ -7066,12 +8398,12 @@ typedef struct fiftyone_degrees_result_user_agent_t {
 							ConfigDeviceDetection structure. The final
 							character will always be a null terminator once
 							initialized by the ResultsUserAgentInit method */
-	int matchedUserAgentLength; /**< Number of characters in the matched
-								User-Agent */
+	size_t matchedUserAgentLength; /**< Number of characters in the matched
+								   User-Agent */
 	const char *targetUserAgent; /**< Pointer to the string containing the
 								 User-Agent for processing */
-	int targetUserAgentLength; /**< Number of characters in the target
-							   User-Agent */
+	size_t targetUserAgentLength; /**< Number of characters in the target
+								  User-Agent */
 } fiftyoneDegreesResultUserAgent;
 
 /**
@@ -7083,6 +8415,10 @@ typedef struct fiftyone_degrees_results_device_detection_t {
 	fiftyoneDegreesResultsBase b; /**< Base results */
 	fiftyoneDegreesOverrideValueArray *overrides; /**< Any value overrides in
 												  the results */
+	char* bufferPseudo; /**< Working memory used for pseudo headers */
+	int bufferPseudoLength; /**< Number of bytes in bufferPseudo */
+	char* bufferTransform; /**< Working memory used to transform evidence */
+	int bufferTransformLength; /**< Number of bytes in bufferTransform */
 } fiftyoneDegreesResultsDeviceDetection;
 	
 /**
@@ -7144,7 +8480,7 @@ void fiftyoneDegreesResultsUserAgentFree(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is the subject of the following patents and patent
@@ -7322,7 +8658,7 @@ typedef struct fiftyoneDegrees_graph_node_t {
  * Read a graph node from the file collection provided and store in the data
  * pointer. This method is used when creating a collection from file.
  * @param file collection to read from
- * @param offset of the graph node in the collection
+ * @param key of the graph node in the collection
  * @param data to store the resulting graph node in
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h
@@ -7330,7 +8666,7 @@ typedef struct fiftyoneDegrees_graph_node_t {
  */
 EXTERNAL void* fiftyoneDegreesGraphNodeReadFromFile(
 	const fiftyoneDegreesCollectionFile *file,
-	uint32_t offset,
+	const fiftyoneDegreesCollectionKey *key,
 	fiftyoneDegreesData *data,
 	fiftyoneDegreesException *exception);
 
@@ -7491,88 +8827,30 @@ EXTERNAL int fiftyoneDegreesGraphTraceGet(
 #endif
 
 /**
- * Default value for the difference threshold used in the default configuration.
+ * Evidence key for GetHighEntropyValues base 64 encoded JSON data.
  */
-#ifndef FIFTYONE_DEGREES_HASH_DIFFERENCE
-#define FIFTYONE_DEGREES_HASH_DIFFERENCE 0
+#ifndef FIFTYONE_DEGREES_EVIDENCE_HIGH_ENTROPY_VALUES
+#define FIFTYONE_DEGREES_EVIDENCE_HIGH_ENTROPY_VALUES \
+	(FIFTYONE_DEGREES_COMMON_COOKIE_PREFIX \
+	"gethighentropyvalues")
 #endif
 
 /**
- * Default value for the drift threshold used in the default configuration.
+ * Evidence key for Structured User Agents (SUA) JSON data.
  */
-#ifndef FIFTYONE_DEGREES_HASH_DRIFT
-#define FIFTYONE_DEGREES_HASH_DRIFT 0
+#ifndef FIFTYONE_DEGREES_EVIDENCE_STRUCTURED_USER_AGENT
+#define FIFTYONE_DEGREES_EVIDENCE_STRUCTURED_USER_AGENT \
+	(FIFTYONE_DEGREES_COMMON_COOKIE_PREFIX \
+	"structureduseragent")
 #endif
 
  /**
- * Default value for the string cache size used in the default collection
- * configuration.
- */
-#ifndef FIFTYONE_DEGREES_STRING_CACHE_SIZE
-#define FIFTYONE_DEGREES_STRING_CACHE_SIZE 10000
-#endif
-/**
- * Default value for the string cache loaded size used in the default
- * collection configuration.
- */
-#ifndef FIFTYONE_DEGREES_STRING_LOADED
-#define FIFTYONE_DEGREES_STRING_LOADED 100
-#endif
-/**
- * Default value for the node cache size used in the default collection
- * configuration.
- */
-#ifndef FIFTYONE_DEGREES_NODE_CACHE_SIZE
-#define FIFTYONE_DEGREES_NODE_CACHE_SIZE 50000
-#endif
-/**
- * Default value for the node cache loaded size used in the default collection
- * configuration.
- */
-#ifndef FIFTYONE_DEGREES_NODE_LOADED
-#define FIFTYONE_DEGREES_NODE_LOADED 100
-#endif
-/**
- * Default value for the profile cache size used in the default collection
- * configuration.
- */
-#ifndef FIFTYONE_DEGREES_PROFILE_CACHE_SIZE
-#define FIFTYONE_DEGREES_PROFILE_CACHE_SIZE 10000
-#endif
-/**
- * Default value for the profile cache loaded size used in the default
- * collection configuration.
- */
-#ifndef FIFTYONE_DEGREES_PROFILE_LOADED
-#define FIFTYONE_DEGREES_PROFILE_LOADED 100
-#endif
-/**
- * Default value for the value cache size used in the default collection
- * configuration.
- */
-#ifndef FIFTYONE_DEGREES_VALUE_CACHE_SIZE
-#define FIFTYONE_DEGREES_VALUE_CACHE_SIZE 500
-#endif
-/**
- * Default value for the value cache loaded size used in the default collection
- * configuration.
- */
-#ifndef FIFTYONE_DEGREES_VALUE_LOADED
-#define FIFTYONE_DEGREES_VALUE_LOADED 0
-#endif
-/**
- * Default value for the property cache size used in the default collection
- * configuration.
- */
-#ifndef FIFTYONE_DEGREES_PROPERTY_CACHE_SIZE
-#define FIFTYONE_DEGREES_PROPERTY_CACHE_SIZE 0
-#endif
-/**
- * Default value for the property cache loaded size used in the default
- * collection configuration.
- */
-#ifndef FIFTYONE_DEGREES_PROPERTY_LOADED
-#define FIFTYONE_DEGREES_PROPERTY_LOADED INT_MAX
+  * Evidence key for Structured User Agents (SUA) JSON data.
+  */
+#ifndef FIFTYONE_DEGREES_EVIDENCE_DEVICE_ID
+#define FIFTYONE_DEGREES_EVIDENCE_DEVICE_ID \
+	(FIFTYONE_DEGREES_COMMON_COOKIE_PREFIX \
+	"deviceId")
 #endif
 
 /**
@@ -7703,9 +8981,13 @@ typedef struct fiftyone_degrees_dataset_hash_t {
 	fiftyoneDegreesCollection *components; /**< Collection of all components */
 	fiftyoneDegreesList componentsList; /**< List of component items from the
 										components collection */
+	fiftyoneDegreesHeaderPtrs** componentHeaders; /**< Array of headers for 
+												  each component index */
 	bool *componentsAvailable; /**< Array of flags indicating if there are
 							   any properties available for the component with
 							   the matching index in componentsList */
+	uint32_t componentsAvailableCount; /**< Number of components with 
+									   properties */
 	fiftyoneDegreesCollection *maps; /**< Collection data file maps */
 	fiftyoneDegreesCollection *properties; /**< Collection of all properties */
 	fiftyoneDegreesCollection *values; /**< Collection of all values */
@@ -7758,9 +9040,7 @@ typedef struct fiftyone_degrees_result_hash_t {
 	fiftyoneDegreesCollectionItem propertyItem; /**< Property for the current
 												request */ \
 	fiftyoneDegreesList values; /**< List of value items when results are
-								fetched */ \
-	fiftyoneDegreesEvidenceKeyValuePairArray* pseudoEvidence; /**< Array of
-															pseudo evidence */
+								fetched */
 
 FIFTYONE_DEGREES_ARRAY_TYPE(
 	fiftyoneDegreesResultHash,
@@ -7842,14 +9122,6 @@ EXTERNAL_VAR fiftyoneDegreesConfigHash fiftyoneDegreesHashBalancedTempConfig;
  * pass can be afforded.
  */
 EXTERNAL_VAR fiftyoneDegreesConfigHash fiftyoneDegreesHashDefaultConfig;
-
-/**
- * Configuration designed only for testing. This uses a loaded size of 1 in
- * all collections to ensure all every get and release calls can be tested for
- * items which do not exist in the root collection. This configuration is not
- * exposed through C++ intentionally as it is only used in testing.
- */
-EXTERNAL_VAR fiftyoneDegreesConfigHash fiftyoneDegreesHashSingleLoadedConfig;
 
 /**
  * EXTERNAL METHODS
@@ -8003,8 +9275,9 @@ EXTERNAL void fiftyoneDegreesResultsHashFromUserAgent(
  * @param deviceIdLength of the deviceId string
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h.
+ * @return number of profiles that were valid in the device id provided.
  */
-EXTERNAL void fiftyoneDegreesResultsHashFromDeviceId(
+EXTERNAL int fiftyoneDegreesResultsHashFromDeviceId(
 	fiftyoneDegreesResultsHash *results,
 	const char* deviceId,
 	size_t deviceIdLength,
@@ -8018,14 +9291,12 @@ EXTERNAL void fiftyoneDegreesResultsHashFromDeviceId(
  * process. e.g. Client Hints support.
  * @param manager pointer to the resource manager which manages a Hash data
  * set
- * @param userAgentCapacity number of User-Agents to be able to handle
  * @param overridesCapacity number of properties that can be overridden,
  * 0 to disable overrides
  * @return newly created results structure
  */
 EXTERNAL fiftyoneDegreesResultsHash* fiftyoneDegreesResultsHashCreate(
 	fiftyoneDegreesResourceManager *manager,
-	uint32_t userAgentCapacity,
 	uint32_t overridesCapacity);
 
 /**
@@ -8100,7 +9371,7 @@ EXTERNAL fiftyoneDegreesCollectionItem* fiftyoneDegreesResultsHashGetValues(
  * @param results pointer to the results structure to release
  * @param propertyName name of the property to be used with the values
  * @param buffer character buffer allocated by the caller
- * @param bufferLength of the character buffer
+ * @param length of the character buffer
  * @param separator string to be used to separate multiple values if available
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h.
@@ -8110,17 +9381,34 @@ EXTERNAL fiftyoneDegreesCollectionItem* fiftyoneDegreesResultsHashGetValues(
 EXTERNAL size_t fiftyoneDegreesResultsHashGetValuesString(
 	fiftyoneDegreesResultsHash* results,
 	const char *propertyName,
-	char *buffer,
-	size_t bufferLength,
-	const char *separator,
+	char* const buffer,
+	size_t const length,
+	char* const separator,
 	fiftyoneDegreesException *exception);
+
+/**
+ * Sets the buffer to a JSON string that represents all the available 
+ * properties and values in the results.
+ * @param results pointer to the results structure to release
+ * @param buffer character buffer allocated by the caller
+ * @param length of the character buffer
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ * @return the number of characters available for values. May be larger than
+ * bufferLength if the buffer is not long enough to return the result.
+ */
+EXTERNAL size_t fiftyoneDegreesResultsHashGetValuesJson(
+	fiftyoneDegreesResultsHash* results,
+	char* const buffer,
+	size_t const length,
+	fiftyoneDegreesException* exception);
 
 /**
  * Sets the buffer the values associated in the results for the property name.
  * @param results pointer to the results structure to release
  * @param requiredPropertyIndex required property index of for the values
  * @param buffer character buffer allocated by the caller
- * @param bufferLength of the character buffer
+ * @param length of the character buffer
  * @param separator string to be used to separate multiple values if available
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h.
@@ -8131,10 +9419,30 @@ EXTERNAL size_t
 fiftyoneDegreesResultsHashGetValuesStringByRequiredPropertyIndex(
 	fiftyoneDegreesResultsHash* results,
 	const int requiredPropertyIndex,
-	char *buffer,
-	size_t bufferLength,
-	const char *separator,
+	char* const buffer,
+	size_t const length,
+	char* const separator,
 	fiftyoneDegreesException *exception);
+
+/**
+ * Sets the buffer the values associated in the results for all the available
+ * properties where each line is the properties for the property at the 
+ * corresponding index.
+ * @param results pointer to the results structure to release
+ * @param buffer character buffer allocated by the caller
+ * @param length of the character buffer
+ * @param separator string to be used to separate multiple values if available
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ * @return the number of characters available for values. May be larger than
+ * length if the buffer is not long enough to return the result.
+ */
+EXTERNAL size_t fiftyoneDegreesResultsHashGetValuesStringAllProperties(
+	fiftyoneDegreesResultsHash* results,
+	char* const buffer,
+	size_t const length,
+	char* const separator,
+	fiftyoneDegreesException* exception);
 
 /**
  * Reload the data set being used by the resource manager using the data file
@@ -8259,8 +9567,8 @@ EXTERNAL uint32_t fiftyoneDegreesHashIterateProfilesForPropertyAndValue(
  * '-'.
  * @param dataSet pointer to the data set used to get the result
  * @param result pointer to the result to get the device id of
- * @param destination pointer to the memory to write the characters to
- * @param size amount of memory allocated to destination
+ * @param buffer pointer to the memory to write the characters to
+ * @param length amount of memory allocated to buffer
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h
  * @return the destination pointer
@@ -8268,24 +9576,24 @@ EXTERNAL uint32_t fiftyoneDegreesHashIterateProfilesForPropertyAndValue(
 EXTERNAL char* fiftyoneDegreesHashGetDeviceIdFromResult(
 	fiftyoneDegreesDataSetHash *dataSet,
 	fiftyoneDegreesResultHash *result,
-	char *destination,
-	size_t size,
+	char* const buffer,
+	size_t const length,
 	fiftyoneDegreesException *exception);
 
 /**
  * Get the device id string from the results provided. This contains profile
  * ids for all components, concatenated with the separator character '-'.
  * @param results pointer to the results to get the device id of
- * @param destination pointer to the memory to write the characters to
- * @param size amount of memory allocated to destination
+ * @param buffer pointer to the memory to write the characters to
+ * @param length amount of memory allocated to buffer
  * @param exception pointer to an exception data structure to be used if an
  * exception occurs. See exceptions.h
  * @return the destination pointer
  */
 EXTERNAL char* fiftyoneDegreesHashGetDeviceIdFromResults(
 	fiftyoneDegreesResultsHash *results,
-	char *destination,
-	size_t size,
+	char* const buffer,
+	size_t const length,
 	fiftyoneDegreesException *exception);
 
 /**
@@ -8295,7 +9603,7 @@ EXTERNAL char* fiftyoneDegreesHashGetDeviceIdFromResults(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -8338,7 +9646,7 @@ EXTERNAL char* fiftyoneDegreesHashGetDeviceIdFromResults(
 
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -8387,151 +9695,7 @@ EXTERNAL char* fiftyoneDegreesHashGetDeviceIdFromResults(
 
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
- * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
- *
- * This Original Work is licensed under the European Union Public Licence
- * (EUPL) v.1.2 and is subject to its terms as set out below.
- *
- * If a copy of the EUPL was not distributed with this file, You can obtain
- * one at https://opensource.org/licenses/EUPL-1.2.
- *
- * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
- * amended by the European Commission) shall be deemed incompatible for
- * the purposes of the Work and the provisions of the compatibility
- * clause in Article 5 of the EUPL shall not apply.
- *
- * If using the Work as, or as part of, a network application, by
- * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading,
- * such notice(s) shall fulfill the requirements of that article.
- * ********************************************************************* */
-
-#ifndef FIFTYONE_DEGREES_COORDINATE_H_INCLUDED
-#define FIFTYONE_DEGREES_COORDINATE_H_INCLUDED
-
-/**
- * @ingroup FiftyOneDegreesCommon
- * @defgroup FiftyOneDegreesCoordinate Coodinate
- *
- * A coordinate representation of a location.
- *
- * ## Introduction
- *
- * Type and Getter method for a coordinate item.
- *
- * Obtaining the latitude and longitude of a 
- * coordinate item in the strings collection can
- * be done by using the API #fiftyoneDegreesIpiGetCoordinate
- *
- * @{
- */
-
-
-/**
- * Singular coordinate, representing a location
- */
-typedef struct fiftyone_degrees_ipi_coordinate_t {
-	float lat; /**< Latitude value of the coordinate */
-	float lon; /**< Longitude value of the coordinate */
-} fiftyoneDegreesCoordinate;
-
-/**
- * Get the 51Degrees Coordinate from the strings collection item.
- * This should be used on the item whose property type is 
- * #FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_COORDINATE.
- * @param item the collection item pointing to the coordinate item in
- * strings collection
- * @param exception pointer to an exception data structure to be used if an
- * exception occurs. See exceptions.h
- * @return the coordinate value
- */
-EXTERNAL fiftyoneDegreesCoordinate fiftyoneDegreesIpiGetCoordinate(
-	fiftyoneDegreesCollectionItem *item,
-	fiftyoneDegreesException *exception);
-
-/**
- * @}
- */
-
-#endif
-/* *********************************************************************
- * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
- * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
- *
- * This Original Work is licensed under the European Union Public Licence
- * (EUPL) v.1.2 and is subject to its terms as set out below.
- *
- * If a copy of the EUPL was not distributed with this file, You can obtain
- * one at https://opensource.org/licenses/EUPL-1.2.
- *
- * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
- * amended by the European Commission) shall be deemed incompatible for
- * the purposes of the Work and the provisions of the compatibility
- * clause in Article 5 of the EUPL shall not apply.
- *
- * If using the Work as, or as part of, a network application, by
- * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading,
- * such notice(s) shall fulfill the requirements of that article.
- * ********************************************************************* */
-
-#ifndef FIFTYONE_DEGREES_PSEUDO_HEADER_H_INCLUDED
-#define FIFTYONE_DEGREES_PSEUDO_HEADER_H_INCLUDED
-
-
-#define FIFTYONE_DEGREES_PSEUDO_HEADER_SEP '\x1F' /** unit separator of headers
-                                                    and headers' values that
-                                                    form pseudo header and
-                                                    its evidence */
-
-/**
- * Iterate through pseudo-headers passed in supplied parameters, construct
- * their coresponding evidence. The new evidence should be prefixed with
- * the prefix of the evidence that form it. The pseudo evidence pointed by the
- * evidence collection, should have pre-allocated the memory to hold the new
- * constructured evidence. No new evidence should be constructed if evidence
- * has already been provided in the evidence collection or there is not enough
- * values to form one.
- *
- * @param evidence pointer to the evidence that contains the real headers
- * and will be updated with the pseudo-headers.
- * @param acceptedHeaders the list of headers accepted by the
- * engine
- * @param bufferSize the size of the buffer allocated to hold the new evidence
- * pointed by the orignalValue in each pre-allocated pseudoEvidence item of
- * the evidence collection.
- * @param orderOfPrecedence of the accepted prefixes
- * @param precedenceSize the number of accepted prefixes
- * @param exception pointer to an exception data structure to be used if an
- * exception occurs. See exceptions.h.
- */
-EXTERNAL void fiftyoneDegreesPseudoHeadersAddEvidence(
-    fiftyoneDegreesEvidenceKeyValuePairArray* evidence,
-    fiftyoneDegreesHeaders* acceptedHeaders,
-    size_t bufferSize,
-    const fiftyoneDegreesEvidencePrefix* orderOfPrecedence,
-    size_t precedenceSize,
-    fiftyoneDegreesException* exception);
-
-/**
- * Iterate through the evidence collection and reset the pseudo-headers
- * evidence. Mainly set the field and value pointers to NULL.
- *
- * @param evidence pointer to the evidence colletection
- * @param bufferSize the size of the buffer allocated to hold the new evidence
- * pointed by the orignalValue in each pre-allocated pseudoEvidence item of
- * the evidence collection.
- */
-EXTERNAL void fiftyoneDegreesPseudoHeadersRemoveEvidence(
-    fiftyoneDegreesEvidenceKeyValuePairArray* evidence,
-    size_t bufferSize);
-
-#endif
-/* *********************************************************************
- * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -8564,7 +9728,7 @@ EXTERNAL void fiftyoneDegreesPseudoHeadersRemoveEvidence(
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -8612,7 +9776,7 @@ EXTERNAL int fiftyoneDegreesBoolToInt(bool b);
 #endif
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -8646,40 +9810,7 @@ EXTERNAL uint64_t fiftyoneDegreesProcessGetId();
 
 /* *********************************************************************
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
- * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
- *
- * This Original Work is licensed under the European Union Public Licence
- * (EUPL) v.1.2 and is subject to its terms as set out below.
- *
- * If a copy of the EUPL was not distributed with this file, You can obtain
- * one at https://opensource.org/licenses/EUPL-1.2.
- *
- * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
- * amended by the European Commission) shall be deemed incompatible for
- * the purposes of the Work and the provisions of the compatibility
- * clause in Article 5 of the EUPL shall not apply.
- *
- * If using the Work as, or as part of, a network application, by
- * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading,
- * such notice(s) shall fulfill the requirements of that article.
- * ********************************************************************* */
-
-#ifndef FIFTYONE_DEGREES_PAIR_H_INCLUDED
-#define FIFTYONE_DEGREES_PAIR_H_INCLUDED
-
-typedef struct fiftyone_degrees_key_value_pair_t {
-	char* key;
-	size_t keyLength;
-	char* value;
-	size_t valueLength;
-} fiftyoneDegreesKeyValuePair;
-
-#endif
-/* *********************************************************************
- * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -8782,6 +9913,137 @@ EXTERNAL fiftyoneDegreesStatusCode fiftyoneDegreesYamlFileIterate(
 
 #endif
 
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_WKBTOT_H_INCLUDED
+#define FIFTYONE_DEGREES_WKBTOT_H_INCLUDED
+
+#include <stdbool.h>
+
+
+/**
+ * Used as a return type from the conversion routines to carry information about
+ * the operation results to the caller, allows the caller to f.e. judge about the buffer utilization,
+ * and whether the buffer was of sufficient size
+ */
+typedef struct fiftyone_degrees_transform_wkb_to_t_result {
+	/**
+	 * number of characters written or that would have been written to the buffer, reflects required buffer size
+	 */
+	size_t written;
+
+	/**
+	 * the caller should check this flag and reallocate the buffer to be of at least `written` size
+	 * if this flag is set
+	 */
+	bool bufferTooSmall;
+} fiftyoneDegreesWkbtotResult;
+
+typedef enum {
+	FIFTYONE_DEGREES_WKBToT_REDUCTION_NONE = 0, /**< Standard compliant */
+	FIFTYONE_DEGREES_WKBToT_REDUCTION_SHORT = 1, /**< Some values reduced to int16_t */
+} fiftyoneDegreesWkbtotReductionMode;
+
+/**
+ * Converts WKB geometry bytes to WKT string and writes it to string builder.
+ * @param wellKnownBinary bytes of WKB geometry.
+ * @param reductionMode type/value reduction applied to decrease WKB size.
+ * @param decimalPlaces precision for numbers (places after the decimal dot).
+ * @param builder string builder to write WKT into.
+ * @param exception pointer to the exception struct.
+ * @return How many bytes were written to the buffer and if it was too small.
+ */
+EXTERNAL void
+fiftyoneDegreesWriteWkbAsWktToStringBuilder
+(const unsigned char *wellKnownBinary,
+ fiftyoneDegreesWkbtotReductionMode reductionMode,
+ uint8_t decimalPlaces,
+ fiftyoneDegreesStringBuilder *builder,
+ fiftyoneDegreesException *exception);
+
+/**
+ * Converts WKB geometry bytes to WKT string written into provided buffer.
+ * @param wellKnownBinary bytes of WKB geometry.
+ * @param reductionMode type/value reduction applied to decrease WKB size.
+ * @param buffer buffer to write WKT geometry into.
+ * @param length length available in the buffer.
+ * @param decimalPlaces precision for numbers (places after the decimal dot).
+ * @param exception pointer to the exception struct.
+ * @return How many bytes were written to the buffer and if it was too small.
+ */
+EXTERNAL fiftyoneDegreesWkbtotResult
+fiftyoneDegreesConvertWkbToWkt
+(const unsigned char *wellKnownBinary,
+ fiftyoneDegreesWkbtotReductionMode reductionMode,
+ char *buffer, size_t length,
+ uint8_t decimalPlaces,
+ fiftyoneDegreesException *exception);
+
+#endif //FIFTYONE_DEGREES_WKBTOT_H_INCLUDED
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2025 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_CONSTANTS_H
+#define FIFTYONE_DEGREES_CONSTANTS_H
+
+#include <stdint.h>
+
+/**
+ * Buffer length sufficient to hold any IP address.
+ * Technically, 39 + 1(NUL), but with some trailing space just in case.
+ */
+static const uint8_t fiftyoneDegreesIpAddressStringMaxLength = 50;
+
+/**
+ * The length for the buffer most WKT strings are expected to fit into.
+ */
+#define FIFTYONE_DEGREES_REASONABLE_WKT_STRING_LENGTH 128
+
+/**
+ * Max. number of decimal places to be printed for a double.
+ */
+#define FIFTYONE_DEGREES_MAX_DOUBLE_DECIMAL_PLACES 15
+
+#endif //FIFTYONE_DEGREES_CONSTANTS_H
 
 /**
  * Macro used to support synonym implementation. Creates a typedef which 
@@ -8803,6 +10065,9 @@ typedef fiftyoneDegreesCollectionItem Item; /**< Synonym for #fiftyoneDegreesCol
  */
 
 MAP_TYPE(Exception);
+MAP_TYPE(CollectionIndexOrOffset)
+MAP_TYPE(CollectionKey)
+MAP_TYPE(CollectionKeyType)
 MAP_TYPE(CollectionIterateMethod)
 MAP_TYPE(CollectionMemory)
 #ifndef FIFTYONE_DEGREES_MEMORY_ONLY
@@ -8812,6 +10077,8 @@ MAP_TYPE(CollectionCache)
 MAP_TYPE(CollectionFileRead)
 #endif
 MAP_TYPE(FileHandle)
+MAP_TYPE(FileOffset)
+MAP_TYPE(FileOffsetUnsigned)
 MAP_TYPE(CacheNode)
 MAP_TYPE(FilePool)
 MAP_TYPE(CollectionHeader)
@@ -8836,8 +10103,6 @@ MAP_TYPE(PoolItem)
 MAP_TYPE(PoolHead)
 MAP_TYPE(PoolResourceSize)
 MAP_TYPE(List)
-MAP_TYPE(EvidenceIpType)
-MAP_TYPE(EvidenceIpAddress)
 MAP_TYPE(DataSetInitFromFileMethod)
 MAP_TYPE(DataSetInitFromMemoryMethod)
 MAP_TYPE(DataSetInitFromMemoryMethod)
@@ -8845,8 +10110,10 @@ MAP_TYPE(PropertiesGetMethod)
 MAP_TYPE(HeadersGetMethod)
 MAP_TYPE(DataSetInitFromFileMethod)
 MAP_TYPE(String)
-MAP_TYPE(StringFormat)
+MAP_TYPE(VarLengthByteArray)
+MAP_TYPE(StoredBinaryValue)
 MAP_TYPE(Property)
+MAP_TYPE(PropertyTypeRecord)
 MAP_TYPE(Component)
 MAP_TYPE(ComponentKeyValuePair)
 MAP_TYPE(Value)
@@ -8858,11 +10125,15 @@ MAP_TYPE(OverrideValueArray)
 MAP_TYPE(EvidenceKeyValuePair)
 MAP_TYPE(EvidenceKeyValuePairArray)
 MAP_TYPE(PropertyAvailable)
+MAP_TYPE(PropertyValueType)
 MAP_TYPE(PropertiesAvailable)
 MAP_TYPE(EvidencePropertyIndex)
 MAP_TYPE(EvidenceProperties)
 MAP_TYPE(Header)
-MAP_TYPE(HeaderArray)
+MAP_TYPE(Headers)
+MAP_TYPE(HeaderID)
+MAP_TYPE(HeaderPtr)
+MAP_TYPE(HeaderPtrs)
 MAP_TYPE(OverridesFilterMethod)
 MAP_TYPE(Mutex)
 MAP_TYPE(Signal)
@@ -8871,23 +10142,40 @@ MAP_TYPE(TreeRoot)
 MAP_TYPE(ProfileOffset)
 MAP_TYPE(ProfileIterateMethod)
 MAP_TYPE(Float)
-MAP_TYPE(Coordinate)
-MAP_TYPE(HeaderSegment)
-MAP_TYPE(HeaderSegmentArray)
 MAP_TYPE(KeyValuePair)
+MAP_TYPE(HeaderID)
+MAP_TYPE(IndicesPropertyProfile)
+MAP_TYPE(StringBuilder)
+MAP_TYPE(Json)
+MAP_TYPE(KeyValuePairArray)
+MAP_TYPE(IpType)
+MAP_TYPE(IpAddress)
+MAP_TYPE(WkbtotResult)
+MAP_TYPE(WkbtotReductionMode)
 
+#define ProfileGetFinalSize fiftyoneDegreesProfileGetFinalSize /**< Synonym for #fiftyoneDegreesProfileGetFinalSize function. */
 #define ProfileGetOffsetForProfileId fiftyoneDegreesProfileGetOffsetForProfileId /**< Synonym for #fiftyoneDegreesProfileGetOffsetForProfileId function. */
 #define OverrideValuesAdd fiftyoneDegreesOverrideValuesAdd /**< Synonym for #fiftyoneDegreesOverrideValuesAdd function. */
 #define ExceptionGetMessage fiftyoneDegreesExceptionGetMessage /**< Synonym for #fiftyoneDegreesExceptionGetMessage function. */
 #define ProfileGetByProfileId fiftyoneDegreesProfileGetByProfileId /**< Synonym for #fiftyoneDegreesProfileGetByProfileId function. */
+#define ProfileGetByProfileIdIndirect fiftyoneDegreesProfileGetByProfileIdIndirect /**< Synonym for #fiftyoneDegreesProfileGetByProfileIdIndirect function. */
 #define ProfileGetByIndex fiftyoneDegreesProfileGetByIndex /**< Synonym for #fiftyoneDegreesProfileGetByIndex function. */
 #define OverridesAdd fiftyoneDegreesOverridesAdd /**< Synonym for #fiftyoneDegreesOverridesAdd function. */
 #define OverrideProfileIds fiftyoneDegreesOverrideProfileIds /**< Synonym for #fiftyoneDegreesOverrideProfileIds function. */
+#define OverridePropertiesFree fiftyoneDegreesOverridePropertiesFree /**< Synonym for #fiftyoneDegreesOverridePropertiesFree function. */
 #define ComponentInitList fiftyoneDegreesComponentInitList /**< Synonym for #fiftyoneDegreesComponentInitList function. */
+#define ComponentGetFinalSize fiftyoneDegreesComponentGetFinalSize /**< Synonym for #fiftyoneDegreesComponentGetFinalSize function. */
+#define ComponentGetHeaders fiftyoneDegreesComponentGetHeaders /**< Synonym for #fiftyoneDegreesComponentGetHeaders function. */
 #define CollectionGetInteger32 fiftyoneDegreesCollectionGetInteger32 /**< Synonym for #fiftyoneDegreesCollectionGetInteger32 function. */
 #define PropertyGet fiftyoneDegreesPropertyGet /**< Synonym for #fiftyoneDegreesPropertyGet function. */
 #define ProfileIterateValuesForProperty fiftyoneDegreesProfileIterateValuesForProperty /**< Synonym for #fiftyoneDegreesProfileIterateValuesForProperty function. */
+#define ProfileIterateValuesForPropertyWithIndex fiftyoneDegreesProfileIterateValuesForPropertyWithIndex /**< Synonym for #fiftyoneDegreesProfileIterateValuesForPropertyWithIndex function. */
+#define ProfileIterateValueIndexes fiftyoneDegreesProfileIterateValueIndexes /**< Synonym for #fiftyoneDegreesProfileIterateValueIndexes function. */
 #define ProfileIterateProfilesForPropertyAndValue fiftyoneDegreesProfileIterateProfilesForPropertyAndValue /**< Synonym for #fiftyoneDegreesProfileIterateProfilesForPropertyAndValue function. */
+#define ProfileIterateProfilesForPropertyWithTypeAndValue fiftyoneDegreesProfileIterateProfilesForPropertyWithTypeAndValue /**< Synonym for #fiftyoneDegreesProfileIterateProfilesForPropertyWithTypeAndValue function. */
+#define ProfileIterateProfilesForPropertyWithTypeAndValueAndOffsetExtractor fiftyoneDegreesProfileIterateProfilesForPropertyWithTypeAndValueAndOffsetExtractor /**< Synonym for #fiftyoneDegreesProfileIterateProfilesForPropertyWithTypeAndValueAndOffsetExtractor function. */
+#define ProfileOffsetAsPureOffset fiftyoneDegreesProfileOffsetAsPureOffset /**< Synonym for #fiftyoneDegreesProfileOffsetAsPureOffset function. */
+#define ProfileOffsetToPureOffset fiftyoneDegreesProfileOffsetToPureOffset /**< Synonym for #fiftyoneDegreesProfileOffsetToPureOffset function. */
 #define PropertiesGetPropertyIndexFromName fiftyoneDegreesPropertiesGetPropertyIndexFromName /**< Synonym for #fiftyoneDegreesPropertiesGetPropertyIndexFromName function. */
 #define TreeIterate fiftyoneDegreesTreeIterateNodes /**< Synonym for #fiftyoneDegreesTreeIterateNodes function. */
 #define TreeCount fiftyoneDegreesTreeCount /**< Synonym for #fiftyoneDegreesTreeCount function. */
@@ -8907,6 +10195,7 @@ MAP_TYPE(KeyValuePair)
 #define StringSubString fiftyoneDegreesStringSubString /**< Synonym for #fiftyoneDegreesSubString function. */
 #define OverridesExtractFromEvidence fiftyoneDegreesOverridesExtractFromEvidence /**< Synonym for #fiftyoneDegreesOverridesExtractFromEvidence function. */
 #define EvidenceIterate fiftyoneDegreesEvidenceIterate /**< Synonym for #fiftyoneDegreesEvidenceIterate function. */
+#define EvidenceIterateForHeaders fiftyoneDegreesEvidenceIterateForHeaders /**< Synonym for #fiftyoneDegreesEvidenceIterateForHeaders function. */
 #define CacheRelease fiftyoneDegreesCacheRelease /**< Synonym for #fiftyoneDegreesCacheRelease function. */
 #define DataReset fiftyoneDegreesDataReset /**< Synonym for #fiftyoneDegreesDataReset function. */
 #define CacheFree fiftyoneDegreesCacheFree /**< Synonym for #fiftyoneDegreesCacheFree function. */
@@ -8938,6 +10227,8 @@ MAP_TYPE(KeyValuePair)
 #define HeadersFree fiftyoneDegreesHeadersFree /**< Synonym for #fiftyoneDegreesHeadersFree function. */
 #define PropertiesFree fiftyoneDegreesPropertiesFree /**< Synonym for #fiftyoneDegreesPropertiesFree function. */
 #define FilePoolRelease fiftyoneDegreesFilePoolRelease /**< Synonym for #fiftyoneDegreesFilePoolRelease function. */
+#define FileSeek fiftyoneDegreesFileSeek /**< Synonym for #fiftyoneDegreesFileSeek function. */
+#define FileTell fiftyoneDegreesFileTell /**< Synonym for #fiftyoneDegreesFileTell function. */
 #define FileDelete fiftyoneDegreesFileDelete /**< Synonym for #fiftyoneDegreesFileDelete function. */
 #define FilePoolReset fiftyoneDegreesFilePoolReset /**< Synonym for #fiftyoneDegreesFilePoolReset function. */
 #define PropertiesCreate fiftyoneDegreesPropertiesCreate /**< Synonym for #fiftyoneDegreesPropertiesCreate function. */
@@ -8968,10 +10259,18 @@ MAP_TYPE(KeyValuePair)
 #define MemoryStandardFreeAligned fiftyoneDegreesMemoryStandardFreeAligned /**< Synonym for #fiftyoneDegreesMemoryStandardFreeAligned function. */
 #define ResourceManagerFree fiftyoneDegreesResourceManagerFree /**< Synonym for #fiftyoneDegreesResourceManagerFree function. */
 #define StringGet fiftyoneDegreesStringGet /**< Synonym for #fiftyoneDegreesStringGet function. */
+#define StringGetFinalSize fiftyoneDegreesStringGetFinalSize /**< Synonym for #fiftyoneDegreesStringGetFinalSize function. */
+#define StoredBinaryValueGet fiftyoneDegreesStoredBinaryValueGet /**< Synonym for #fiftyoneDegreesStoredBinaryValueGet function. */
+#define StoredBinaryValueRead fiftyoneDegreesStoredBinaryValueRead /**< Synonym for #fiftyoneDegreesStoredBinaryValueRead function. */
+#define StoredBinaryValueCompareWithString fiftyoneDegreesStoredBinaryValueCompareWithString /**< Synonym for #fiftyoneDegreesStoredBinaryValueCompareWithString function. */
+#define StoredBinaryValueToIntOrDefault fiftyoneDegreesStoredBinaryValueToIntOrDefault /**< Synonym for #fiftyoneDegreesStoredBinaryValueToIntOrDefault function. */
+#define StoredBinaryValueToDoubleOrDefault fiftyoneDegreesStoredBinaryValueToDoubleOrDefault /**< Synonym for #fiftyoneDegreesStoredBinaryValueToDoubleOrDefault function. */
+#define StoredBinaryValueToBoolOrDefault fiftyoneDegreesStoredBinaryValueToBoolOrDefault /**< Synonym for #fiftyoneDegreesStoredBinaryValueToBoolOrDefault function. */
 #define EvidenceFree fiftyoneDegreesEvidenceFree /**< Synonym for #fiftyoneDegreesEvidenceFree function. */
 #define EvidenceCreate fiftyoneDegreesEvidenceCreate /**< Synonym for #fiftyoneDegreesEvidenceCreate function. */
 #define EvidenceMapPrefix fiftyoneDegreesEvidenceMapPrefix /**< Synonym for #fiftyoneDegreesEvidenceMapPrefix function. */
 #define EvidencePrefixString fiftyoneDegreesEvidencePrefixString /**< Synonym for #fiftyoneDegreesEvidencePrefixString function. */
+#define EvidenceAddPair fiftyoneDegreesEvidenceAddPair /**< Synonym for #fiftyoneDegreesEvidenceAddPair function. */
 #define EvidenceAddString fiftyoneDegreesEvidenceAddString /**< Synonym for #fiftyoneDegreesEvidenceAddString function. */
 #define PropertiesGetRequiredPropertyIndexFromName fiftyoneDegreesPropertiesGetRequiredPropertyIndexFromName /**< Synonym for #fiftyoneDegreesPropertiesGetRequiredPropertyIndexFromName function. */
 #define PropertiesGetNameFromRequiredIndex fiftyoneDegreesPropertiesGetNameFromRequiredIndex /**< Synonym for #fiftyoneDegreesPropertiesGetNameFromRequiredIndex function. */
@@ -8991,7 +10290,7 @@ MAP_TYPE(KeyValuePair)
 #define FileWrite fiftyoneDegreesFileWrite /**< Synonym for #fiftyoneDegreesFileWrite function. */
 #define FilePoolInit fiftyoneDegreesFilePoolInit /**< Synonym for #fiftyoneDegreesFilePoolInit function. */
 #define FileCreateDirectory fiftyoneDegreesFileCreateDirectory /**< Synonym for #fiftyoneDegreesFileCreateDirectory function. */
-#define TextFileIterateWithLimit fiftyoneDegreesTextFileIterateWithLimit /**< Synonym for #fiftyoneDegreesTextFileIterateIterate function. */
+#define TextFileIterateWithLimit fiftyoneDegreesTextFileIterateWithLimit /**< Synonym for #fiftyoneDegreesTextFileIterateWithLimit function. */
 #define TextFileIterate fiftyoneDegreesTextFileIterate /**< Synonym for #fiftyoneDegreesTextFileIterate function. */
 #define ResourceManagerInit fiftyoneDegreesResourceManagerInit /**< Synonym for #fiftyoneDegreesResourceManagerInit function. */
 #define PropertiesGetPropertyIndexFromRequiredIndex fiftyoneDegreesPropertiesGetPropertyIndexFromRequiredIndex /**< Synonym for #fiftyoneDegreesPropertiesGetPropertyIndexFromRequiredIndex function. */
@@ -9008,11 +10307,17 @@ MAP_TYPE(KeyValuePair)
 #define HeadersIsHttp fiftyoneDegreesHeadersIsHttp /**< Synonym for #fiftyoneDegreesHeadersIsHttp function. */
 #define ListReset fiftyoneDegreesListReset /**< Synonym for #fiftyoneDegreesListReset function. */
 #define ListRelease fiftyoneDegreesListRelease /**< Synonym for #fiftyoneDegreesListRelease function. */
+#define ValueGetContent fiftyoneDegreesValueGetContent /**< Synonym for #fiftyoneDegreesValueGetContent function. */
 #define ValueGetName fiftyoneDegreesValueGetName /**< Synonym for #fiftyoneDegreesValueGetName function. */
 #define ValueGetByName fiftyoneDegreesValueGetByName /**< Synonym for #fiftyoneDegreesValueGetByName function. */
+#define ValueGetByNameAndType fiftyoneDegreesValueGetByNameAndType /**< Synonym for #fiftyoneDegreesValueGetByNameAndType function. */
+#define ValueGetIndexByName fiftyoneDegreesValueGetIndexByName /**< Synonym for #fiftyoneDegreesValueGetIndexByName function. */
+#define ValueGetIndexByNameAndType fiftyoneDegreesValueGetIndexByNameAndType /**< Synonym for #fiftyoneDegreesValueGetIndexByNameAndType function. */
 #define ValueGet fiftyoneDegreesValueGet /**< Synonym for #fiftyoneDegreesValueGet function. */
 #define CollectionBinarySearch fiftyoneDegreesCollectionBinarySearch /**< Synonym for #fiftyoneDegreesCollectionBinarySearch function. */
 #define PropertyGetName fiftyoneDegreesPropertyGetName /**< Synonym for #fiftyoneDegreesPropertyGetName function. */
+#define PropertyGetStoredType fiftyoneDegreesPropertyGetStoredType /**< Synonym for #fiftyoneDegreesPropertyGetStoredType function. */
+#define PropertyGetStoredTypeByIndex fiftyoneDegreesPropertyGetStoredTypeByIndex /**< Synonym for #fiftyoneDegreesPropertyGetStoredTypeByIndex function. */
 #define CollectionReadFileVariable fiftyoneDegreesCollectionReadFileVariable /**< Synonym for #fiftyoneDegreesCollectionReadFileVariable function. */
 #define PropertyGetByName fiftyoneDegreesPropertyGetByName /**< Synonym for #fiftyoneDegreesPropertyGetByName function. */
 #define ComponentGetKeyValuePair fiftyoneDegreesComponentGetKeyValuePair /**< Synonym for #fiftyoneDegreesComponentGetKeyValuePair function., */
@@ -9028,6 +10333,37 @@ MAP_TYPE(KeyValuePair)
 #define ProcessGetId fiftyoneDegreesProcessGetId /**< Synonym for fiftyoneDegreesProcessGetId */
 #define YamlFileIterate fiftyoneDegreesYamlFileIterate /**< Synonym for fiftyoneDegreesYamlFileIterate */
 #define YamlFileIterateWithLimit fiftyoneDegreesYamlFileIterateWithLimit /**< Synonym for fiftyoneDegreesYamlFileIterateWithLimit */
+#define IndicesPropertyProfileCreate fiftyoneDegreesIndicesPropertyProfileCreate /**< Synonym for fiftyoneDegreesIndicesPropertyProfileCreate */
+#define IndicesPropertyProfileFree fiftyoneDegreesIndicesPropertyProfileFree /**< Synonym for fiftyoneDegreesIndicesPropertyProfileFree */
+#define IndicesPropertyProfileLookup fiftyoneDegreesIndicesPropertyProfileLookup /**< Synonym for fiftyoneDegreesIndicesPropertyProfileLookup */
+#define JsonDocumentStart fiftyoneDegreesJsonDocumentStart /**< Synonym for fiftyoneDegreesJsonDocumentStart */
+#define JsonDocumentEnd fiftyoneDegreesJsonDocumentEnd /**< Synonym for fiftyoneDegreesJsonDocumentEnd */
+#define JsonPropertyStart fiftyoneDegreesJsonPropertyStart /**< Synonym for fiftyoneDegreesJsonPropertyStart */
+#define JsonPropertyEnd fiftyoneDegreesJsonPropertyEnd /**< Synonym for fiftyoneDegreesJsonPropertyEnd */
+#define JsonPropertyValues fiftyoneDegreesJsonPropertyValues /**< Synonym for fiftyoneDegreesJsonPropertyValues */
+#define JsonPropertySeparator fiftyoneDegreesJsonPropertySeparator /**< Synonym for fiftyoneDegreesJsonPropertySeparator */
+#define StringBuilderInit fiftyoneDegreesStringBuilderInit /**< Synonym for fiftyoneDegreesStringBuilderInit */
+#define StringBuilderAddChar fiftyoneDegreesStringBuilderAddChar /**< Synonym for fiftyoneDegreesStringBuilderAddChar */
+#define StringBuilderAddInteger fiftyoneDegreesStringBuilderAddInteger /**< Synonym for fiftyoneDegreesStringBuilderAddInteger */
+#define StringBuilderAddDouble fiftyoneDegreesStringBuilderAddDouble /**< Synonym for fiftyoneDegreesStringBuilderAddDouble */
+#define StringBuilderAddChars fiftyoneDegreesStringBuilderAddChars /**< Synonym for fiftyoneDegreesStringBuilderAddChars */
+#define StringBuilderAddIpAddress fiftyoneDegreesStringBuilderAddIpAddress /**< Synonym for fiftyoneDegreesStringBuilderAddIpAddress */
+#define StringBuilderAddStringValue fiftyoneDegreesStringBuilderAddStringValue /**< Synonym for fiftyoneDegreesStringBuilderAddStringValue */
+#define StringBuilderComplete fiftyoneDegreesStringBuilderComplete /**< Synonym for fiftyoneDegreesStringBuilderComplete */
+#define EvidenceIterateMethod fiftyoneDegreesEvidenceIterateMethod /**< Synonym for fiftyoneDegreesEvidenceIterateMethod */
+#define OverrideHasValueForRequiredPropertyIndex fiftyoneDegreesOverrideHasValueForRequiredPropertyIndex /**< Synonym for fiftyoneDegreesOverrideHasValueForRequiredPropertyIndex */
+#define IpAddressParse fiftyoneDegreesIpAddressParse /**< Synonym for fiftyoneDegreesIpAddressParse */
+#define IpAddressesCompare fiftyoneDegreesIpAddressesCompare /**< Synonym for fiftyoneDegreesIpAddressesCompare */
+#define ConvertWkbToWkt fiftyoneDegreesConvertWkbToWkt /**< Synonym for fiftyoneDegreesConvertWkbToWkt */
+#define WriteWkbAsWktToStringBuilder fiftyoneDegreesWriteWkbAsWktToStringBuilder /**< Synonym for fiftyoneDegreesWriteWkbAsWktToStringBuilder */
+
+/* <-- only one asterisk to avoid inclusion in documentation
+ * Shortened constants.
+ */
+
+#define IpAddressStringMaxLength fiftyoneDegreesIpAddressStringMaxLength /**< Synonym for #fiftyoneDegreesIpAddressStringMaxLength constant. */
+#define REASONABLE_WKT_STRING_LENGTH FIFTYONE_DEGREES_REASONABLE_WKT_STRING_LENGTH /**< Synonym for #FIFTYONE_DEGREES_REASONABLE_WKT_STRING_LENGTH constant macro. */
+#define MAX_DOUBLE_DECIMAL_PLACES FIFTYONE_DEGREES_MAX_DOUBLE_DECIMAL_PLACES /**< Synonym for #FIFTYONE_DEGREES_MAX_DOUBLE_DECIMAL_PLACES constant macro. */
 
 /* <-- only one asterisk to avoid inclusion in documentation
  * Shortened macros.
@@ -9039,8 +10375,8 @@ MAP_TYPE(KeyValuePair)
 #define EXCEPTION_OKAY FIFTYONE_DEGREES_EXCEPTION_OKAY /**< Synonym for #FIFTYONE_DEGREES_EXCEPTION_OKAY macro. */
 #define EXCEPTION_FAILED FIFTYONE_DEGREES_EXCEPTION_FAILED /**< Synonym for #FIFTYONE_DEGREES_EXCEPTION_FAILED macro. */
 #define EXCEPTION_THROW FIFTYONE_DEGREES_EXCEPTION_THROW /**< Synonym for #FIFTYONE_DEGREES_EXCEPTION_THROW macro. */
+#define EXCEPTION_CHECK FIFTYONE_DEGREES_EXCEPTION_CHECK /**< Synonym for #FIFTYONE_DEGREES_EXCEPTION_CHECK macro. */
 #define STRING FIFTYONE_DEGREES_STRING /**< Synonym for #FIFTYONE_DEGREES_STRING macro. */
-#define IP_ADDRESS FIFTYONE_DEGREES_IP_ADDRESS /**< Synonym for #FIFTYONE_DEGREES_IP_ADDRESS macro. */
 #define COLLECTION_RELEASE FIFTYONE_DEGREES_COLLECTION_RELEASE /**< Synonym for #FIFTYONE_DEGREES_COLLECTION_RELEASE macro. */
 #define FILE_MAX_PATH FIFTYONE_DEGREES_FILE_MAX_PATH /**< Synonym for #FIFTYONE_DEGREES_FILE_MAX_PATH macro. */
 #define THREAD_CREATE FIFTYONE_DEGREES_THREAD_CREATE /**< Synonym for #FIFTYONE_DEGREES_THREAD_CREATE macro. */
@@ -9064,6 +10400,7 @@ MAP_TYPE(KeyValuePair)
 #define NATIVE_TO_FLOAT FIFTYONE_DEGREES_NATIVE_TO_FLOAT /**< Synonym for #FIFTYONE_DEGREES_NATIVE_TO_FLOAT macro. */
 #define FLOAT_IS_EQUAL FIFTYONE_DEGREES_FLOAT_IS_EQUAL /**< Synonym for #FIFTYONE_DEGREES_FLOAT_IS_EQUAL macro. */
 #define PSEUDO_HEADER_SEP FIFTYONE_DEGREES_PSEUDO_HEADER_SEP /**< Synonym for #FIFTYONE_DEGREES_PSEUDO_HEADER_SEP macro. */
+#define REASONABLE_WKT_STRING_LENGTH FIFTYONE_DEGREES_REASONABLE_WKT_STRING_LENGTH /**< Synonym for #FIFTYONE_DEGREES_REASONABLE_WKT_STRING_LENGTH macro. */
 
 /* <-- only one asterisk to avoid inclusion in documentation
  * Shorten status codes.
@@ -9101,12 +10438,437 @@ MAP_TYPE(KeyValuePair)
 #define COLLECTION_FILE_SEEK_FAIL FIFTYONE_DEGREES_STATUS_COLLECTION_FILE_SEEK_FAIL /**< Synonym for #FIFTYONE_DEGREES_STATUS_COLLECTION_FILE_SEEK_FAIL status code. */
 #define COLLECTION_FILE_READ_FAIL FIFTYONE_DEGREES_STATUS_COLLECTION_FILE_READ_FAIL /**< Synonym for #FIFTYONE_DEGREES_STATUS_COLLECTION_FILE_READ_FAIL status code. */
 #define INCORRECT_IP_ADDRESS_FORMAT FIFTYONE_DEGREES_STATUS_INCORRECT_IP_ADDRESS_FORMAT /**< Synonym for #FIFTYONE_DEGREES_STATUS_INCORRECT_IP_ADDRESS_FORMAT status code. */
-#define TEMP_FILE_ERROR FIFTYONE_DEGREES_STATUS_TEMP_FILE_ERROR /**< Synonym for #FIFTYONE_DEGREES_STATUS_INCORRECT_IP_ADDRESS_FORMAT status code. */
+#define TEMP_FILE_ERROR FIFTYONE_DEGREES_STATUS_TEMP_FILE_ERROR /**< Synonym for #FIFTYONE_DEGREES_STATUS_TEMP_FILE_ERROR status code. */
 #define DATA_FILE_NEEDS_UPDATED FIFTYONE_DEGREES_STATUS_DATA_FILE_NEEDS_UPDATED /**< Synonym for #FIFTYONE_DEGREES_STATUS_DATA_FILE_NEEDS_UPDATED status code. */
+#define INSUFFICIENT_CAPACITY FIFTYONE_DEGREES_STATUS_INSUFFICIENT_CAPACITY /**< Synonym for #FIFTYONE_DEGREES_STATUS_INSUFFICIENT_CAPACITY status code. */
+#define INVALID_INPUT FIFTYONE_DEGREES_STATUS_INVALID_INPUT /**< Synonym for #FIFTYONE_DEGREES_STATUS_INVALID_INPUT status code.*/
+#define UNSUPPORTED_STORED_VALUE_TYPE FIFTYONE_DEGREES_STATUS_UNSUPPORTED_STORED_VALUE_TYPE /**< Synonym for #FIFTYONE_DEGREES_STATUS_UNSUPPORTED_STORED_VALUE_TYPE status code.*/
+#define FILE_TOO_LARGE FIFTYONE_DEGREES_STATUS_FILE_TOO_LARGE /**< Synonym for #FIFTYONE_DEGREES_STATUS_FILE_TOO_LARGE status code.*/
+#define UNKNOWN_GEOMETRY FIFTYONE_DEGREES_STATUS_UNKNOWN_GEOMETRY /**< Synonym for #FIFTYONE_DEGREES_STATUS_UNKNOWN_GEOMETRY status code.*/
+#define RESERVED_GEOMETRY FIFTYONE_DEGREES_STATUS_RESERVED_GEOMETRY /**< Synonym for #FIFTYONE_DEGREES_STATUS_RESERVED_GEOMETRY status code.*/
+#define IPV6_LENGTH FIFTYONE_DEGREES_IPV6_LENGTH /**< Synonym for #FIFTYONE_DEGREES_IPV6_LENGTH macro.*/
+#define IPV4_LENGTH FIFTYONE_DEGREES_IPV4_LENGTH /**< Synonym for #FIFTYONE_DEGREES_IPV4_LENGTH macro.*/
+#define IP_TYPE_IPV4 FIFTYONE_DEGREES_IP_TYPE_IPV4 /**< Synonym for #FIFTYONE_DEGREES_IP_TYPE_IPV4 enum value.*/
+#define IP_TYPE_IPV6 FIFTYONE_DEGREES_IP_TYPE_IPV6 /**< Synonym for #FIFTYONE_DEGREES_IP_TYPE_IPV6 enum value.*/
+#define IP_TYPE_INVALID FIFTYONE_DEGREES_IP_TYPE_INVALID /**< Synonym for #FIFTYONE_DEGREES_IP_TYPE_INVALID enum value.*/
 
-/**
+ /**
  * @}
  */
+
+#endif
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_TRANSFORM_H_INCLUDED
+#define FIFTYONE_DEGREES_TRANSFORM_H_INCLUDED
+
+#include <stdbool.h>
+
+/**
+ * User-Agent Client Hints (UACH) Representation Conversion Routines
+ *
+ * 3 common ways to represent UACH are:
+ * - [HTTP header map](https://wicg.github.io/ua-client-hints/)
+ * - getHighEntropyValues() JS API call result in JSON format
+ * - Structured User Agent Object from OpenRTB 2.6
+ *
+ * Links:
+ * -
+ * [getHighEntropyValues()](https://developer.mozilla.org/en-US/docs/Web/API/NavigatorUAData/getHighEntropyValues)
+ * -
+ * [device.sua](https://51degrees.com/blog/openrtb-structured-user-agent-and-user-agent-client-hints)
+ * - [OpenRTB 2.6
+ * spec](https://iabtechlab.com/wp-content/uploads/2022/04/OpenRTB-2-6_FINAL.pdf)
+ *
+ * 51Degrees uses HTTP header map to represent UACH and expects the evidence to
+ * be provided as HTTP headers (or same name query parameters).  The header
+ * names in question are:
+ * - Sec-CH-UA
+ * - Sec-CH-UA-Platform
+ * - Sec-CH-UA-Mobile
+ * - Sec-CH-UA-Model
+ * - Sec-CH-UA-Full-Version-List
+ * - Sec-CH-UA-Platform-Version
+ * - Sec-CH-UA-Arch
+ * - Sec-CH-UA-Bitness
+ *
+ * The conversion routines transform the GetHighEntropyValues (GHEV) or
+ * Structured User Agent (SUA) SUA input into the HTTP header maps.
+ *
+ * Routines are provided in 2 styles: iterative (for potentially lazy
+ * consumption) and array-results (for eager consumption). The former uses
+ * callback to iteratively provide header name-value pairs to the caller, the
+ * latter provides the whole header map array as output. In addition 2 variants
+ * of GHEV routine is provided: one that accepts a raw JSON string and one that
+ * accepts a base64 encoded JSON string as input parameter.
+ *
+ * Both styles use an externally preallocated memory buffer to write the formed
+ * http header values to. The output callback or headermap will have pointers to
+ * the null-terminated strings stored in that buffer.  Thus the buffer should
+ * outlive the last output evidence use.
+ */
+
+/**
+ * Used as a return type from the conversion routines to carry information about
+ * the operation results to the caller, allows the caller to f.e. judge about the buffer utilization,
+ * and whether the buffer was of sufficient size
+ */
+typedef struct fiftyone_degrees_transform_iterate_result {
+	/**
+	 * number of pairs of evidence extracted or would have been extracted and correspondingly calls
+	 * to the callback made
+	 */
+	uint32_t iterations;
+	
+	/**
+	 * number of characters written or that would have been written to the buffer, reflects required buffer size
+	 */
+	size_t written;
+	
+	/**
+	 * the caller should check this flag and reallocate the buffer to be of at least `written` size
+	 * if this flag is set
+	 */
+	bool bufferTooSmall; //
+} fiftyoneDegreesTransformIterateResult;
+
+/**
+ * A callback function type definition that is called every time a header
+ * name-value pair is formed and allows the caller to decide how to handle the
+ * output. The callback function must be provided as a param to the
+ * Iterate-style conversion routines.
+ * @param state - arbitrary context object - f.e. external state or a structure
+ * to accumulate output
+ * @param header - a header key value pair containing the pointer to the header
+ * name and value
+ * @return the implementer returns true to continue the iteration or false to
+ * stop
+ */
+EXTERNAL typedef bool (*fiftyoneDegreesTransformCallback)
+(void *state, fiftyoneDegreesKeyValuePair header);
+
+/**
+ * Iteratively convert getHighEntropyValue() API result JSON string to HTTP
+ * header representation.
+ * @param json a JSON string with the getHighEntropyValue() API result
+ * @param buffer preallocated working memory buffer used to store the converted
+ * HTTP header names and values. The lifetime of this buffer is managed by the
+ * caller
+ * @param length length of the buffer
+ * @param exception - a constant pointer to a (preallocated) exception object
+ * that is filled in case any errors occurred. must be checked by the caller
+ * upon routine exit. `exception.status` will be `FIFTYONE_DEGREES_STATUS_SUCCESS`
+ * if the conversion was successful, or will indicate error otherwise, s.a.
+ * - `FIFTYONE_DEGREES_STATUS_INSUFFICIENT_MEMORY` if provided buffer was of
+ * insufficient size, in that case the callback will still be called, but value
+ * will be NULL and valueLength will indicate the length necessary to store the
+ * value in the buffer - this info can be then used by the caller to allocate
+ * the buffer of sufficient size and execute another call - essentially
+ * resulting in a dry run before allocation.
+ * - `FIFTYONE_DEGREES_STATUS_INVALID_INPUT` if f.e. JSON was malformed - in that
+ * case callback will likely not be called, or will be called a limited number
+ * of times until the corruption becomes obvious to the iterator as no lookahead
+ * logic is implemented
+ * @param callback a function that is called whenever a header key value is
+ * extracted header key value pair is passed as a param; if callback returns
+ * true, iteration continues, otherwise halts
+ * @param state an external context state to pass to be used by the callback
+ * function
+ * @return the number of iterations / header pairs detected (callback calls
+ * made) and buffer utilization information
+ */
+EXTERNAL fiftyoneDegreesTransformIterateResult 
+fiftyoneDegreesTransformIterateGhevFromJson
+(const char *json, char *const buffer, size_t length,
+ fiftyoneDegreesTransformCallback callback, void *state,
+ fiftyoneDegreesException *const exception);
+
+/**
+ * Iteratively convert getHighEntropyValue() API result base64 encoded JSON
+ * string to HTTP header representation.
+ * @param base64 a base64 encoded JSON string with the getHighEntropyValue() API
+ * result
+ * @param buffer preallocated working memory buffer used to store the converted
+ * HTTP header names and values with a new line separator (\n) between each
+ * header key-value pair. The lifetime of this buffer is managed by the caller
+ * @param length length of the buffer
+ * @param exception - a constant pointer to a (preallocated) exception object
+ * that is filled in case any errors occurred. must be checked by the caller
+ * upon routine exit. `exception.status` will be `FIFTYONE_DEGREES_STATUS_SUCCESS`
+ * if the conversion was successful, or will indicate error otherwise, s.a.
+ * - `FIFTYONE_DEGREES_STATUS_INSUFFICIENT_MEMORY` if provided buffer was of
+ * insufficient size, in that case the callback will still be called, but value
+ * will be NULL and valueLength will indicate the length necessary to store the
+ * value in the buffer - this info can be then used by the caller to allocate
+ * the buffer of sufficient size and execute another call - essentially
+ * resulting in a dry run before allocation...
+ * - `FIFTYONE_DEGREES_STATUS_INVALID_INPUT` if f.e. JSON was malformed - in that
+ * case callback will likely not be called, or will be called a limited number
+ * of times until the corruption becomes obvious to the iterator as no lookahead
+ * logic is intended
+ * @param callback a function that is called whenever a header is extracted with
+ * header name and value passed as params if the function returns true,
+ * iteration continues, otherwise halts
+ * @param state an external context state to pass to be used by the callback
+ * function
+ * @return the number of iterations / header pairs detected (callback calls
+ * made) and buffer utilization information
+ */
+EXTERNAL fiftyoneDegreesTransformIterateResult 
+fiftyoneDegreesTransformIterateGhevFromBase64
+(const char *base64, char *buffer, size_t length,
+ fiftyoneDegreesTransformCallback callback, void *state,
+ fiftyoneDegreesException *const exception);
+
+/**
+ * Iteratively convert device.sua JSON string to HTTP header representation.
+ * @param json a JSON string with the device.sua raw representation
+ * @param buffer preallocated working memory buffer used to store the converted
+ * HTTP header names and values with a new line separator (\n) between each
+ * header key-value pair. The lifetime of this buffer is managed by the caller
+ * @param length length of the buffer
+ * @param exception - a constant pointer to a (preallocated) exception object
+ * that is filled in case any errors occurred. must be checked by the caller
+ * upon routine exit. `exception.status` will be `FIFTYONE_DEGREES_STATUS_SUCCESS`
+ * if the conversion was successful, or will indicate error otherwise, s.a.
+ * - `FIFTYONE_DEGREES_STATUS_INSUFFICIENT_MEMORY` if provided buffer was of
+ * insufficient size, in that case the callback will still be called, but value
+ * will be NULL and valueLength will indicate the length necessary to store the
+ * value in the buffer - this info can be then used by the caller to allocate
+ * the buffer of sufficient size and execute another call - essentially
+ * resulting in a dry run before allocation...
+ * - `FIFTYONE_DEGREES_STATUS_INVALID_INPUT` if f.e. JSON was malformed - in that
+ * case callback will likely not be called, or will be called a limited number
+ * of times until the corruption becomes obvious to the iterator as no lookahead
+ * logic is intended
+ * @param callback a function that is called whenever a header is extracted with
+ * header name and value passed as params if the function returns true,
+ * iteration continues, otherwise halts
+ * @param state an external context state to pass to be used by the callback
+ * function
+ * @return the number of iterations / header pairs detected (callback calls
+ * made) and buffer utilization information
+ */
+EXTERNAL fiftyoneDegreesTransformIterateResult 
+fiftyoneDegreesTransformIterateSua
+(const char *json, char *buffer, size_t length,
+ fiftyoneDegreesTransformCallback callback, void *state,
+ fiftyoneDegreesException *const exception);
+
+/**
+ * Eagerly convert getHighEntropyValue() API result JSON string to HTTP header
+ * representation.
+ * @param json a JSON string with the getHighEntropyValue() API result
+ * @param buffer preallocated working memory buffer used to store the converted
+ * HTTP header names and values with a new line separator (\n) between each
+ * header key-value pair. The lifetime of this buffer is managed by the caller
+ * @param length length of the buffer
+ * @param exception - a constant pointer to a (preallocated) exception object
+ * that is filled in case any errors occurred. must be checked by the caller
+ * upon routine exit. `exception.status` will be `FIFTYONE_DEGREES_STATUS_SUCCESS`
+ * if the conversion was successful, or will indicate error otherwise, s.a.
+ * - `FIFTYONE_DEGREES_STATUS_INSUFFICIENT_MEMORY` if provided buffer was of
+ * insufficient size, in that case the callback will still be called, but value
+ * will be NULL and valueLength will indicate the length necessary to store the
+ * value in the buffer - this info can be then used by the caller to allocate
+ * the buffer of sufficient size and execute another call - essentially
+ * resulting in a dry run before allocation...
+ * - `FIFTYONE_DEGREES_STATUS_INVALID_INPUT` if f.e. JSON was malformed - in that
+ * case callback will likely not be called, or will be called a limited number
+ * of times until the corruption becomes obvious to the iterator as no lookahead
+ * logic is intended
+ * @param headers a preallocated (via `FIFTYONE_DEGREES_ARRAY_CREATE` macro) array
+ * of capacity enough to hold up to 8 UACH headers; upon function return will
+ * contain the output http header names and value const char * pointers either
+ * to the DATA segment allocated (names) string constants or preallocated buffer
+ * on the heap.  must not be NULL and has to be memory managed outside of the
+ * function, its lifetime should be long enough to survive the last use of the
+ * returned headers
+ * @return result.iterations specifies the number of headers that was written or
+ * should have been written to the array.  in case this number is higher than headers->capacity
+ * case the exception will have `FIFTYONE_DEGREES_STATUS_INSUFFICIENT_CAPACITY`
+ * status and the returned capacity will signal the array size that needs to be
+ * allocated. result.written and result.bufferTooSmall provide buffer utilization information
+ */
+EXTERNAL fiftyoneDegreesTransformIterateResult 
+fiftyoneDegreesTransformGhevFromJson
+(const char *json, char *buffer, size_t length,
+ fiftyoneDegreesKeyValuePairArray *const headers,
+ fiftyoneDegreesException *const exception);
+
+/**
+ * Eagerly convert getHighEntropyValue() API result from base64-encoded JSON
+ * string to HTTP header representation.
+ * @param base64 a base64-encoded JSON string with the getHighEntropyValue() API
+ * result
+ * @param buffer preallocated working memory buffer used to store the converted
+ * HTTP header names and values with a new line separator (\n) between each
+ * header key-value pair. The lifetime of this buffer is managed by the caller
+ * @param length length of the buffer
+ * @param exception - a constant pointer to a (preallocated) exception object
+ * that is filled in case any errors occurred. must be checked by the caller
+ * upon routine exit. `exception.status` will be `FIFTYONE_DEGREES_STATUS_SUCCESS`
+ * if the conversion was successful, or will indicate error otherwise, s.a.
+ * - `FIFTYONE_DEGREES_STATUS_INSUFFICIENT_MEMORY` if provided buffer was of
+ * insufficient size, in that case the callback will still be called, but value
+ * will be NULL and valueLength will indicate the length necessary to store the
+ * value in the buffer - this info can be then used by the caller to allocate
+ * the buffer of sufficient size and execute another call - essentially
+ * resulting in a dry run before allocation...
+ * - `FIFTYONE_DEGREES_STATUS_INVALID_INPUT` if f.e. JSON was malformed - in that
+ * case callback will likely not be called, or will be called a limited number
+ * of times until the corruption becomes obvious to the iterator as no lookahead
+ * logic is intended
+ * @param headers a preallocated (via `FIFTYONE_DEGREES_ARRAY_CREATE` macro) array
+ * of capacity enough to hold up to 8 UACH headers; upon function return will
+ * contain the output http header names and value const char * pointers either
+ * to the DATA segment allocated (names) string constants or preallocated buffer
+ * on the heap.  must not be NULL and has to be memory managed outside of the
+ * function, its lifetime should be long enough to survive the last use of the
+ * returned headers
+ * @return result.iterations specifies the number of headers that was written or
+ * should have been written to the array.  in case this number is higher than headers->capacity
+ * case the exception will have `FIFTYONE_DEGREES_STATUS_INSUFFICIENT_CAPACITY`
+ * status and the returned capacity will signal the array size that needs to be
+ * allocated. result.written and result.bufferTooSmall provide buffer utilization information
+ */
+EXTERNAL fiftyoneDegreesTransformIterateResult 
+fiftyoneDegreesTransformGhevFromBase64
+(const char *base64, char *buffer, size_t length,
+ fiftyoneDegreesKeyValuePairArray *const headers,
+ fiftyoneDegreesException *const exception);
+
+/**
+ * Eagerly convert device.sua JSON string to HTTP header representation.
+ * @param json a raw JSON string with device.sua field contents
+ * @param buffer preallocated working memory buffer used to store the converted
+ * HTTP header names and values with a new line separator (\n) between each
+ * header key-value pair. The lifetime of this buffer is managed by the caller
+ * @param length length of the buffer
+ * @param exception - a constant pointer to a (preallocated) exception object
+ * that is filled in case any errors occurred. must be checked by the caller
+ * upon routine exit. `exception.status` will be FIFTYONE_DEGREES_STATUS_SUCCESS
+ * if the conversion was successful, or will indicate error otherwise, s.a.
+ * - `FIFTYONE_DEGREES_STATUS_INSUFFICIENT_MEMORY` if provided buffer was of
+ * insufficient size, in that case the callback will still be called, but value
+ * will be NULL and valueLength will indicate the length necessary to store the
+ * value in the buffer - this info can be then used by the caller to allocate
+ * the buffer of sufficient size and execute another call - essentially
+ * resulting in a dry run before allocation...
+ * - `FIFTYONE_DEGREES_STATUS_INVALID_INPUT` if f.e. JSON was malformed - in that
+ * case callback will likely not be called, or will be called a limited number
+ * of times until the corruption becomes obvious to the iterator as no lookahead
+ * logic is intended
+ * @param headers a preallocated (via `FIFTYONE_DEGREES_ARRAY_CREATE` macro) array
+ * of capacity enough to hold up to 8 UACH headers; upon function return will
+ * contain the output http header names and value const char * pointers either
+ * to the DATA segment allocated (names) string constants or preallocated buffer
+ * on the heap.  must not be NULL and has to be memory managed outside of the
+ * function, its lifetime should be long enough to survive the last use of the
+ * returned headers
+ * @return result.iterations specifies the number of headers that was written or
+ * should have been written to the array.  in case this number is higher than headers->capacity
+ * case the exception will have `FIFTYONE_DEGREES_STATUS_INSUFFICIENT_CAPACITY`
+ * status and the returned capacity will signal the array size that needs to be
+ * allocated. result.written and result.bufferTooSmall provide buffer utilization information
+ */
+EXTERNAL fiftyoneDegreesTransformIterateResult 
+fiftyoneDegreesTransformSua
+(const char *json, char *buffer, size_t length,
+ fiftyoneDegreesKeyValuePairArray *const headers,
+ fiftyoneDegreesException *const exception);
+
+#endif /* FIFTYONE_DEGREES_TRANSFORM_H_INCLUDED */
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+ *
+ * This Original Work is licensed under the European Union Public Licence
+ * (EUPL) v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ *
+ * If using the Work as, or as part of, a network application, by
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading,
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+#ifndef FIFTYONE_DEGREES_GHEV_DEVICE_DETECTION_H_INCLUDED
+#define FIFTYONE_DEGREES_GHEV_DEVICE_DETECTION_H_INCLUDED
+
+
+/**
+ * Initialise the device detection data set with the pointers to the headers
+ * that are needed for gethighentropyvalues. These header must be present in the
+ * evidence for the gethighentropyvalues javascript to not be returned.
+ * @param dataSet pointer to the data set with the relevant properties and 
+ * headers enabled.
+ * @param properties collection
+ * @param values collection
+ * @param strings collection
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ */
+void fiftyoneDegreesGhevDeviceDetectionInit(
+    fiftyoneDegreesDataSetDeviceDetection *dataSet,
+    fiftyoneDegreesCollection *properties,
+    fiftyoneDegreesCollection *values,
+    fiftyoneDegreesCollection *strings,
+    fiftyoneDegreesException *exception);
+
+/**
+ * True if all the headers are present and gethighentropyvalues javascript is 
+ * not required.
+ * @param dataSet pointer to the data set with an initialised ghevHeaders array.
+ * @param evidence fully initialised with all available headers.
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ */
+bool fiftyoneDegreesGhevDeviceDetectionAllPresent(
+    fiftyoneDegreesDataSetDeviceDetection *dataSet,
+    fiftyoneDegreesEvidenceKeyValuePairArray *evidence,
+    fiftyoneDegreesException *exception);
+
+/**
+ * True if all the headers are present and gethighentropyvalues javascript is 
+ * not required.
+ * @param dataSet pointer to the data set with an initialised ghevHeaders array.
+ * @param results for the override to be applied to.
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ */
+void fiftyoneDegreesGhevDeviceDetectionOverride(
+    fiftyoneDegreesDataSetDeviceDetection *dataSet,
+    fiftyoneDegreesResultsDeviceDetection *results,
+	fiftyoneDegreesException *exception);
 
 #endif
 
@@ -9114,7 +10876,12 @@ MAP_TYPE(ConfigDeviceDetection)
 MAP_TYPE(ResultsDeviceDetection)
 MAP_TYPE(DataSetDeviceDetection)
 MAP_TYPE(ResultUserAgent)
+MAP_TYPE(ConfigDeviceDetection)
+MAP_TYPE(TransformIterateResult)
 
+#define OverrideValuesCreate fiftyoneDegreesOverrideValuesCreate /**< Synonym for #fiftyoneDegreesOverrideValuesCreate function. */
+#define OverrideValuesFree fiftyoneDegreesOverrideValuesFree /**< Synonym for #fiftyoneDegreesOverrideValuesFree function. */
+#define ResultsInit fiftyoneDegreesResultsInit /**< Synonym for #fiftyoneDegreesResultsInit function. */
 #define ResultsUserAgentFree fiftyoneDegreesResultsUserAgentFree /**< Synonym for #fiftyoneDegreesResultsUserAgentFree function. */
 #define ResultsUserAgentInit fiftyoneDegreesResultsUserAgentInit /**< Synonym for #fiftyoneDegreesResultsUserAgentInit function. */
 #define ResultsUserAgentReset fiftyoneDegreesResultsUserAgentReset /**< Synonym for #fiftyoneDegreesResultsUserAgentReset function. */
@@ -9125,6 +10892,18 @@ MAP_TYPE(ResultUserAgent)
 #define DataSetDeviceDetectionRelease fiftyoneDegreesDataSetDeviceDetectionRelease /**< Synonym for #fiftyoneDegreesDataSetDeviceDetectionRelease function. */
 #define DataSetDeviceDetectionGet fiftyoneDegreesDataSetDeviceDetectionGet /**< Synonym for #fiftyoneDegreesDataSetDeviceDetectionGet function. */
 #define DataSetDeviceDetectionInitPropertiesAndHeaders fiftyoneDegreesDataSetDeviceDetectionInitPropertiesAndHeaders /**< Synonym for #fiftyoneDegreesDataSetDeviceDetectionInitPropertiesAndHeaders function. */
+
+#define TransformGhevFromJson fiftyoneDegreesTransformGhevFromJson /**< Synonym for fiftyoneDegreesTransformGhevFromJson */
+#define TransformGhevFromBase64 fiftyoneDegreesTransformGhevFromBase64 /**< Synonym for fiftyoneDegreesTransformGhevFromBase64 */
+#define TransformSua fiftyoneDegreesTransformSua /**< Synonym for fiftyoneDegreesTransformSua */
+#define TransformIterateSua fiftyoneDegreesTransformIterateSua /**< Synonym for fiftyoneDegreesTransformIterateSua */
+#define TransformIterateGhevFromBase64 fiftyoneDegreesTransformIterateGhevFromBase64 /**< Synonym for fiftyoneDegreesTransformIterateGhevFromBase64 */
+#define TransformIterateGhevFromJson fiftyoneDegreesTransformIterateGhevFromJson /**< Synonym for fiftyoneDegreesTransformIterateGhevFromJson */
+#define TransformCallback fiftyoneDegreesTransformCallback /**< Synonym for fiftyoneDegreesTransformCallback */
+
+#define GhevDeviceDetectionInit fiftyoneDegreesGhevDeviceDetectionInit /**< Synonym for fiftyoneDegreesGhevDeviceDetectionInit */
+#define GhevDeviceDetectionAllPresent fiftyoneDegreesGhevDeviceDetectionAllPresent /**< Synonym for fiftyoneDegreesGhevDeviceDetectionAllPresent */
+#define GhevDeviceDetectionOverride fiftyoneDegreesGhevDeviceDetectionOverride /**< Synonym for fiftyoneDegreesGhevDeviceDetectionOverride */
 
 /**
  * @}
@@ -9164,6 +10943,7 @@ MAP_TYPE(HashMatchMethod)
 #define HashReloadManagerFromFile fiftyoneDegreesHashReloadManagerFromFile /**< Synonym for #fiftyoneDegreesHashReloadManagerFromFile function. */
 #define HashReloadManagerFromMemory fiftyoneDegreesHashReloadManagerFromMemory /**< Synonym for #fiftyoneDegreesHashReloadManagerFromMemory function. */
 #define HashIterateProfilesForPropertyAndValue fiftyoneDegreesHashIterateProfilesForPropertyAndValue /**< Synonym for #fiftyoneDegreesHashIterateProfilesForPropertyAndValue function. */
+#define ResultsHashGetValuesJson fiftyoneDegreesResultsHashGetValuesJson /**< Synonym for #fiftyoneDegreesResultsHashGetValuesJson function. */
 
 #define HashInMemoryConfig fiftyoneDegreesHashInMemoryConfig /**< Synonym for #fiftyoneDegreesHashInMemoryConfig config. */
 #define HashHighPerformanceConfig fiftyoneDegreesHashHighPerformanceConfig /**< Synonym for #fiftyoneDegreesHashHighPerformanceConfig config. */
