@@ -11320,9 +11320,11 @@ static bool processPseudoHeader(
 	pair.item.keyLength = 0;
 	pair.header = header;
 	pair.item.value = builder->ptr;
-	pair.item.valueLength = builder->added;
+	// As we've added the null terminator, the "added" is 1 longer than
+	// the actual string length.
+	pair.item.valueLength = builder->added - 1;
 	pair.parsedValue = builder->ptr;
-	pair.parsedLength = builder->added;
+	pair.parsedLength = builder->added - 1;
 	pair.prefix = 0;
 	return callback(state, &pair);
 }
@@ -17289,7 +17291,7 @@ static StatusMessage messages[] = {
 		"pool. Another way to avoid this is by using an in-memory "
 		"configuration, which avoids using file handles completely, and "
 		"removes any limit on concurrency. For info see "
-		"https://51degrees.com/documentation/4.4/_device_detection__features__concurrent_processing.html"},
+		"https://51degrees.com/documentation/4.5/_device_detection__features__concurrent_processing.html"},
 	{ COLLECTION_INDEX_OUT_OF_RANGE,
 		"Index used to retrieve an item from a collection was out of range." },
 	{ COLLECTION_OFFSET_OUT_OF_RANGE,
