@@ -12433,7 +12433,7 @@ const char* fiftyoneDegreesFileGetBaseName(const char *path) {
 	return NULL;
 }
 
-fiftyoneDegreesStatusCode createTempFileWithoutPaths(
+static fiftyoneDegreesStatusCode createTempFileWithoutPaths(
 	const char* masterFile,
 	char* destination,
 	size_t length) {
@@ -12451,7 +12451,7 @@ fiftyoneDegreesStatusCode createTempFileWithoutPaths(
 	return status;
 }
 
-fiftyoneDegreesStatusCode createTempFileWithPaths(
+static fiftyoneDegreesStatusCode createTempFileWithPaths(
 	const char* masterFile,
 	const char** paths,
 	int count,
@@ -19687,7 +19687,7 @@ fiftyoneDegreesWkbtotResult fiftyoneDegreesConvertWkbToWkt(
 
 
 // Number of sequential characters needed to indicate a control block.
-const size_t CONTROL_LENGTH = 3;
+static const size_t CONTROL_LENGTH = 3;
 
 typedef struct pair_state_t {
 	KeyValuePair* pairs; // array of key value evidence pairs
