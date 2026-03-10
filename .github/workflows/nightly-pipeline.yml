@@ -32,6 +32,7 @@ jobs:
       cache-assets: true
     secrets:
       token: ${{ secrets.ACCESS_TOKEN }}
+      DeviceDetection: ${{ secrets.DEVICE_DETECTION_KEY }}
 
   Publish:
     if: ${{ !cancelled() }}
@@ -45,4 +46,5 @@ jobs:
       cache-assets: true
     secrets:
       token: ${{ secrets.ACCESS_TOKEN }}
+      DeviceDetection: ${{ secrets.DEVICE_DETECTION_KEY }}
 

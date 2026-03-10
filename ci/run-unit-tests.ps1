@@ -1,6 +1,11 @@
-param (
-    [Parameter(Mandatory=$true)]
-    [string]$RepoName
-)
+$ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $true
 
-./go/run-unit-tests.ps1 -RepoName $RepoName
+$results = New-Item -ItemType directory -Force -Path "$PSScriptRoot/../test-results/unit"
+
+Push-Location "$PSScriptRoot/.."
+try {
+    go test -v ./dd ./onpremise 2>&1 | go-junit-report -set-exit-code -iocopy -out "$results/results.xml"
+} finally {
+    Pop-Location
+}
