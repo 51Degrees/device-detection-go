@@ -16,7 +16,7 @@ Go Lite implementation is currently supporting the following platforms and archi
 Go version:
 - 1.19
 
-Compiles with go 1.19 and higher.  The minimum version of 1.19 is dictated by the fact that this library is used 
+Compiles with go 1.19 and higher.  The minimum version of 1.19 is dictated by the fact that this library is used
 by the [prebid-server](https://github.com/prebid/prebid-server/) module and it has a minimum version requirement of go 1.19.
 
 ## Pre-requisites
@@ -47,7 +47,7 @@ In order to build use device-detection-go the following are required:
 
 If you are on Windows, make sure that:
 - The path to the `MinGW-x64` `bin` folder is included in the `PATH`. By default, the path should be `C:\msys64\ucrt64\bin`
-- Go environment variable `CGO_ENABLED` is set to `1` 
+- Go environment variable `CGO_ENABLED` is set to `1`
 ```
 go env -w CGO_ENABLED=1
 ```
@@ -93,4 +93,4 @@ go doc -all
 
 ## Examples
 
-Examples are included in a separate repository at [device-detection-examples-go](https://github.com/51degrees/device-detection-examples-go). Users can follow its README.md for details and comments in each examples for how to run them.
+Examples can be found in the [examples](examples) sudbirectory. Users can follow its [README.md](examples/README.md) for details and comments in each examples for how to run them.

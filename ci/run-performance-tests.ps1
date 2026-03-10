@@ -1,8 +1,31 @@
-param (
-    [Parameter(Mandatory)][string]$RepoName,
-    [Parameter(Mandatory)][string]$OrgName,
-    [Parameter(Mandatory)][string]$Name,
-    [string]$Branch = "main"
-)
+param ([Parameter(Mandatory)][string]$Name)
+$ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $true
 
-./go/run-performance-tests.ps1 @PSBoundParameters -ExamplesRepo device-detection-examples-go -Example ./dd/performance/performance.go
+$summary = New-Item -ItemType directory -Force -Path "$PSScriptRoot/../test-results/performance-summary"
+
+Push-Location "$PSScriptRoot/.."
+try {
+    Write-Host "Running performance test..."
+    go run ./dd/performance
+
+    switch -File performance_report.log -Regex {
+        'Average ([^ ]+) ms per' { $MsPerDetection = [double]$matches.1 }
+        'Average ([^ ]+) detections per second' { $DetectionsPerSecond = [double]$matches.1 }
+    }
+
+    if (-not $MsPerDetection -or -not $DetectionsPerSecond) {
+        Get-Content performance_report.log | Write-Error
+    }
+
+    @{
+        HigherIsBetter = @{
+            DetectionsPerSecond = $DetectionsPerSecond
+        }
+        LowerIsBetter = @{
+            AvgMillisecsPerDetection = $MsPerDetection
+        }
+    } | ConvertTo-Json | Out-File $summary/results_$Name.json
+} finally {
+    Pop-Location
+}
