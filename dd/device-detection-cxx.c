@@ -7871,7 +7871,7 @@ EXTERNAL uint32_t fiftyoneDegreesProfileIterateValueIndexes(
  * valid non-negative URL offsets.
  */
 #define FIFTYONE_DEGREES_VALUE_IS_MASKED(v) \
-	(((v)->urlOffsetOrWeight & 0xFFFF0000) == (int32_t)0xFF000000)
+	((((uint32_t)((v)->urlOffsetOrWeight)) & 0xFFFF0000u) == 0xFF000000u)
 
 /** Value structure containing meta data relating to the value. */
 #pragma pack(push, 2)
