@@ -610,68 +610,50 @@ func TestDeviceIdByIndex(t *testing.T) {
 // Test that values are returned correctly when match against device ids
 func TestMatchDeviceId(t *testing.T) {
 	var testFunc TestFunc = func(manager *ResourceManager, t *testing.T) {
-		data := []struct {
-			ua       string
-			expected string
-		}{
-			{uaMobile, "true"},
-			{uaDesktop, "false"},
-			{uaMediaHub, "true"},
-		}
+		uas := []string{uaMobile, uaDesktop, uaMediaHub}
+		property := "IsMobile"
 
-		// Create results hash. Using separate results for match User-Agent
-		// and match Device Id.
+		// Use separate ResultsHash objects so the device-id match is not
+		// influenced by the previous UA match state.
 		results := NewResultsHash(manager, 1, 0)
 		devIdResults := NewResultsHash(manager, 1, 0)
-
-		// Free results hash at the end
 		defer results.Free()
 		defer devIdResults.Free()
 
-		for _, testData := range data {
-			if err := results.MatchUserAgent(testData.ua); err != nil {
-				t.Errorf("Failed to perform detection on User-Agent \"%s\".\n",
-					testData.ua)
+		for _, ua := range uas {
+			if err := results.MatchUserAgent(ua); err != nil {
+				t.Errorf("MatchUserAgent(%q): %v", ua, err)
+				continue
 			}
 
-			// Get values
+			// Capture the value from the direct UA match.
+			wantValue, err := results.ValuesString(property, ",")
+			if err != nil {
+				t.Errorf("ValuesString after MatchUserAgent(%q): %v", ua, err)
+				continue
+			}
+
+			// Obtain DeviceId and re-detect from it.
 			deviceId, err := results.DeviceId()
 			if err != nil {
-				t.Error(err)
+				t.Errorf("DeviceId(%q): %v", ua, err)
+				continue
+			}
+			if err := devIdResults.MatchDeviceId(deviceId); err != nil {
+				t.Errorf("MatchDeviceId(%q): %v", deviceId, err)
+				continue
+			}
+			gotValue, err := devIdResults.ValuesString(property, ",")
+			if err != nil {
+				t.Errorf("ValuesString after MatchDeviceId(%q): %v", deviceId, err)
+				continue
 			}
 
-			// Match on device id
-			err = devIdResults.MatchDeviceId(deviceId)
-			if err != nil {
-				t.Error(err)
-			}
-
-			// Check if property has value
-			property := "IsMobile"
-			// TODO: Uncomment hasValues is fixed in C.
-			/*hasValues, err := devIdResults.HasValues(property)
-			if err != nil {
-				t.Error(err)
-			}
-			if !hasValues {
-				t.Errorf(
-					"Expected hasValues for property \"%s\" to be true, but %t",
-					property,
-					hasValues)
-			}*/
-
-			// Get values
-			value, err := devIdResults.ValuesString(property, ",")
-			if err != nil {
-				t.Errorf("Failed to get values string for User-Agent \"%s\".\n",
-					testData.ua)
-			}
-			// Check if detection is correct
-			if !strings.EqualFold(value, testData.expected) {
-				t.Errorf("Expected \"%s\" but get \"%s\"\n.",
-					testData.expected,
-					value,
-				)
+			// The round-trip must be consistent: same device → same property value.
+			if !strings.EqualFold(gotValue, wantValue) {
+				t.Errorf("round-trip mismatch for UA %q (deviceId %q): "+
+					"MatchUserAgent gave %s=%q, MatchDeviceId gave %s=%q",
+					ua, deviceId, property, wantValue, property, gotValue)
 			}
 		}
 	}

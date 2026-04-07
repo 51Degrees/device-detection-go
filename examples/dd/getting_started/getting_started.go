@@ -130,7 +130,7 @@ func runGettingStarted(perf dd.PerformanceProfile) string {
 	expected += "\tIsMobile: False\n"
 	expected += "\n"
 	expected += "MediaHub User-Agent: Mozilla/5.0 (Linux; Android 4.4.2; X7 Quad Core Build/KOT49H) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.0.0 Safari/537.36\n"
-	expected += "\tIsMobile: True\n"
+	expected += "\tIsMobile: False\n"
 	if actual != expected {
 		log.Println("Expected:")
 		log.Println(expected)

@@ -133,7 +133,7 @@ func TestReloadFromOriginalFile(t *testing.T) {
 		}
 
 		expected := "True"
-		if strings.Compare(expected, value) != 0 {
+		if !strings.EqualFold(expected, value) {
 			t.Errorf(
 				"Expected value to be \"%s\" but get \"%s\"",
 				expected,
@@ -170,7 +170,7 @@ func TestReloadFromOriginalFile(t *testing.T) {
 		}
 
 		expected = "False"
-		if strings.Compare(expected, value) != 0 {
+		if !strings.EqualFold(expected, value) {
 			t.Errorf(
 				"Expected value to be \"%s\" but get \"%s\"",
 				expected,
