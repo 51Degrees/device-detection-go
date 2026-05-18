@@ -125,9 +125,7 @@ func runMatchDeviceId(perf dd.PerformanceProfile) string {
 		"Gecko/20100101 Firefox/41.0"
 
 	// User-Agent string of a MediaHub device.
-	const uaMediaHub = "Mozilla/5.0 (Linux; Android 4.4.2; X7 Quad Core " +
-		"Build/KOT49H) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 " +
-		"Chrome/30.0.0.0 Safari/537.36"
+	const uaMediaHub = "Mozilla/5.0 (SMART-TV; Linux; Tizen 5.0) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/2.1 TV Safari/537.36"
 
 	// Perform detection on mobile User-Agent
 	actual := fmt.Sprintf("Mobile User-Agent: %s\n", uaMobile)
@@ -148,7 +146,7 @@ func runMatchDeviceId(perf dd.PerformanceProfile) string {
 	expected += "Desktop User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:41.0) Gecko/20100101 Firefox/41.0\n"
 	expected += "\tIsMobile: False\n"
 	expected += "\n"
-	expected += "MediaHub User-Agent: Mozilla/5.0 (Linux; Android 4.4.2; X7 Quad Core Build/KOT49H) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.0.0 Safari/537.36\n"
+	expected += "MediaHub User-Agent: Mozilla/5.0 (SMART-TV; Linux; Tizen 5.0) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/2.1 TV Safari/537.36\n"
 	expected += "\tIsMobile: False\n"
 	if actual != expected {
 		log.Println("Expected:")
@@ -170,6 +168,6 @@ func main() {
 	// Desktop User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:41.0) Gecko/20100101 Firefox/41.0
 	// 	IsMobile: False
 	//
-	// MediaHub User-Agent: Mozilla/5.0 (Linux; Android 4.4.2; X7 Quad Core Build/KOT49H) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.0.0 Safari/537.36
+	// MediaHub User-Agent: Mozilla/5.0 (SMART-TV; Linux; Tizen 5.0) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/2.1 TV Safari/537.36
 	// 	IsMobile: False
 }
