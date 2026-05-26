@@ -636,6 +636,9 @@ typedef enum e_fiftyone_degrees_status_code {
 	FIFTYONE_DEGREES_STATUS_FILE_TOO_LARGE, /**< File size exceeds malloc capabilities */
 	FIFTYONE_DEGREES_STATUS_UNKNOWN_GEOMETRY, /**< Unsupported geometry type found in WKB */
 	FIFTYONE_DEGREES_STATUS_RESERVED_GEOMETRY, /**< Geometry type found in WKB is abstract/reserved */
+	FIFTYONE_DEGREES_STATUS_NOT_IMPLEMENTED /**< The requested functionality is
+											not implemented. This is usually
+											because a compile flag is set. */
 } fiftyoneDegreesStatusCode;
 
 /**
@@ -7519,6 +7522,17 @@ EXTERNAL bool fiftyoneDegreesStoredBinaryValueToBoolOrDefault(
 #pragma warning (pop)
 #endif
 
+typedef
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+// In a reduced size data file, there is no profile id, and the value count
+// is written as 2 bytes.
+uint16_t
+#else
+// Full size data file contains a profile id, and 32 bit value count.
+uint32_t
+#endif
+fiftyoneDegreesProfileValuesCountType; /**< Type for fiftyoneDegreesProfile::valueCount */
+
 /**
  * Encapsulates a profile stored within a data set. A profile pertains to a
  * specific set of values for the properties relating to a single component.
@@ -7527,8 +7541,12 @@ EXTERNAL bool fiftyoneDegreesStoredBinaryValueToBoolOrDefault(
 typedef struct fiftyoneDegrees_profile_t {
 	const byte componentIndex; /**< The index of the component the profile
 	                               relates to */
+#ifndef FIFTYONE_DEGREES_REDUCED_FILE
+	// In a reduced size data file, there is no profile id.
+	// Full size data file contains a profile id.
 	const uint32_t profileId; /**< Unique id of the profile */
-	const uint32_t valueCount; /**< The number of values within the profile */
+#endif
+	const fiftyoneDegreesProfileValuesCountType valueCount; /**< The number of values within the profile */
 } fiftyoneDegreesProfile;
 #pragma pack(pop)
 
@@ -7540,7 +7558,9 @@ typedef struct fiftyoneDegrees_profile_t {
  */
 #pragma pack(push, 4)
 typedef struct fiftyoneDegrees_profile_offset_t {
+#ifndef FIFTYONE_DEGREES_REDUCED_FILE
 	const uint32_t profileId; /**< The unique Id of the profile */
+#endif
 	const uint32_t offset; /**< Offset to the profile in the profiles structure */
 } fiftyoneDegreesProfileOffset;
 #pragma pack(pop)
@@ -7879,8 +7899,11 @@ typedef struct fiftyoneDegrees_value_t {
 	const int16_t propertyIndex; /**< Index of the property the value relates to */
 	const int32_t nameOffset; /**< The offset in the strings structure to the 
 	                              value name */
+#ifndef FIFTYONE_DEGREES_REDUCED_FILE
+	// Descriptions are not included in reduced size data files.
 	const int32_t descriptionOffset; /**< The offset in the strings structure to
 	                                     the value description */
+#endif
 	const int32_t urlOffsetOrWeight; /**< The offset in the strings structure to
 	                                     the value URL, or a masked weight if
 	                                     upper 2 bytes == 0xFF00 (i.e. value
@@ -8746,6 +8769,7 @@ MAP_TYPE(TreeNode)
 MAP_TYPE(TreeRoot)
 MAP_TYPE(ProfileOffset)
 MAP_TYPE(ProfileIterateMethod)
+MAP_TYPE(ProfileValuesCountType)
 MAP_TYPE(Float)
 MAP_TYPE(KeyValuePair)
 MAP_TYPE(HeaderID)
@@ -9061,6 +9085,7 @@ MAP_TYPE(WeightedItemList)
 #define FILE_TOO_LARGE FIFTYONE_DEGREES_STATUS_FILE_TOO_LARGE /**< Synonym for #FIFTYONE_DEGREES_STATUS_FILE_TOO_LARGE status code.*/
 #define UNKNOWN_GEOMETRY FIFTYONE_DEGREES_STATUS_UNKNOWN_GEOMETRY /**< Synonym for #FIFTYONE_DEGREES_STATUS_UNKNOWN_GEOMETRY status code.*/
 #define RESERVED_GEOMETRY FIFTYONE_DEGREES_STATUS_RESERVED_GEOMETRY /**< Synonym for #FIFTYONE_DEGREES_STATUS_RESERVED_GEOMETRY status code.*/
+#define NOT_IMPLEMENTED FIFTYONE_DEGREES_STATUS_NOT_IMPLEMENTED /**< Synonym for #FIFTYONE_DEGREES_STATUS_NOT_IMPLEMENTED. */
 #define IPV6_LENGTH FIFTYONE_DEGREES_IPV6_LENGTH /**< Synonym for #FIFTYONE_DEGREES_IPV6_LENGTH macro.*/
 #define IPV4_LENGTH FIFTYONE_DEGREES_IPV4_LENGTH /**< Synonym for #FIFTYONE_DEGREES_IPV4_LENGTH macro.*/
 #define IP_TYPE_IPV4 FIFTYONE_DEGREES_IP_TYPE_IPV4 /**< Synonym for #FIFTYONE_DEGREES_IP_TYPE_IPV4 enum value.*/
@@ -10760,6 +10785,16 @@ uint32_t fiftyoneDegreesComponentGetDefaultProfileId(
 	fiftyoneDegreesCollection *profiles,
 	fiftyoneDegreesComponent *component,
 	fiftyoneDegreesException *exception) {
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain profile ids, so this method
+	// cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(profiles);
+	UNREFERENCED_PARAMETER(component);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED)
+	return 0;
+#else
 	uint32_t profileId = 0;
 	Item profileItem;
 	Profile *profile;
@@ -10778,6 +10813,7 @@ uint32_t fiftyoneDegreesComponentGetDefaultProfileId(
 		COLLECTION_RELEASE(profiles, &profileItem);
 	}
 	return profileId;
+#endif
 }
 
 const fiftyoneDegreesString* fiftyoneDegreesComponentGetName(
@@ -13769,6 +13805,17 @@ static void addProfileValuesMethod(
 	fiftyoneDegreesCollection* values, // collection of values
 	Profile* profile, 
 	Exception* exception) {
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain profile ids, so this method
+	// cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(index);
+	UNREFERENCED_PARAMETER(propertyIndexes);
+	UNREFERENCED_PARAMETER(values);
+	UNREFERENCED_PARAMETER(profile);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED);
+#else
 	uint32_t valueIndex;
 	Item valueItem; // The current value memory
 	Value* value; // The current value pointer
@@ -13815,6 +13862,7 @@ static void addProfileValuesMethod(
 			COLLECTION_RELEASE(values, &valueItem);
 		}
 	}
+#endif
 }
 
 static void iterateProfiles(
@@ -13874,6 +13922,16 @@ static uint32_t getProfileId(
 	fiftyoneDegreesCollection* profileOffsets,
 	uint32_t index,
 	Exception* exception) {
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain profile ids, so this method
+	// cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(profileOffsets);
+	UNREFERENCED_PARAMETER(index);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED);
+	return 0;
+#else
 	uint32_t profileId = 0;
 	ProfileOffset* profileOffset; // The profile offset pointer
 	Item profileOffsetItem; // The profile offset memory
@@ -13892,6 +13950,7 @@ static uint32_t getProfileId(
 		COLLECTION_RELEASE(profileOffsets, &profileOffsetItem);
 	}
 	return profileId;
+#endif
 }
 
 static int comparePropertyIndexes(const void* a, const void* b) {
@@ -15606,6 +15665,14 @@ uint64_t fiftyoneDegreesProcessGetId() {
 
 MAP_TYPE(Collection)
 
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+// Reduced size default profile without profile id.
+#define NULL_PROFILE ((Profile){0, 0})
+#else
+// Full default profile with profile id.
+#define NULL_PROFILE ((Profile){0, 0, 0})
+#endif
+
 #ifndef FIFTYONE_DEGREES_MEMORY_ONLY
 uint32_t fiftyoneDegreesProfileGetFinalSize(
 	const void *initial,
@@ -15644,11 +15711,22 @@ static int compareProfileId(
 	UNREFERENCED_PARAMETER(key);
 	UNREFERENCED_PARAMETER(exception);
 #	endif
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain profile ids, so this method
+	// cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(profileId);
+	UNREFERENCED_PARAMETER(item);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED);
+	return -1;
+#else
 	const unsigned int a = ((ProfileOffset*)item->data.ptr)->profileId;
 	const unsigned int b = *(uint32_t*)profileId;
 	if (a < b) return -1;
 	if (a > b) return 1;
 	return 0;
+#endif
 }
 
 typedef struct {
@@ -15666,6 +15744,17 @@ static int compareProfileIdIndirect(
 	UNREFERENCED_PARAMETER(key);
 	UNREFERENCED_PARAMETER(exception);
 #	endif
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain profile ids, so this method
+	// cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(searchState);
+	UNREFERENCED_PARAMETER(profileOffsetItem);
+	UNREFERENCED_PARAMETER(key);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED);
+	return -1;
+#else
 	const IndirectProfileSearch * const search = (IndirectProfileSearch*)searchState;
 	const uint32_t profileOffsetValue = *(uint32_t*)profileOffsetItem->data.ptr;
 	const CollectionKey profileKey = {
@@ -15686,6 +15775,7 @@ static int compareProfileIdIndirect(
 		COLLECTION_RELEASE(search->profiles, search->outProfileItem);
 	}
 	return result;
+#endif
 }
 
 static int compareValueToProperty(const void *p, const void *v) {
@@ -15801,6 +15891,17 @@ uint32_t* fiftyoneDegreesProfileGetOffsetForProfileId(
 	const uint32_t profileId,
 	uint32_t *profileOffset,
 	fiftyoneDegreesException *exception) {
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain profile ids, so this method
+	// cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(profileOffsets);
+	UNREFERENCED_PARAMETER(profileId);
+	UNREFERENCED_PARAMETER(profileOffset);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED);
+	return NULL;
+#else
 	long index;
 	Item profileOffsetItem;
 	DataReset(&profileOffsetItem.data);
@@ -15837,6 +15938,7 @@ uint32_t* fiftyoneDegreesProfileGetOffsetForProfileId(
 	}
 
 	return profileOffset;
+#endif
 }
 
 Profile * fiftyoneDegreesProfileGetByProfileIdIndirect(
@@ -15845,6 +15947,18 @@ Profile * fiftyoneDegreesProfileGetByProfileIdIndirect(
 	const uint32_t profileId,
 	fiftyoneDegreesCollectionItem *outProfileItem,
 	fiftyoneDegreesException * const exception) {
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain profile ids, so this method
+	// cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(profileOffsets);
+	UNREFERENCED_PARAMETER(profiles);
+	UNREFERENCED_PARAMETER(profileId);
+	UNREFERENCED_PARAMETER(outProfileItem);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED);
+	return NULL;
+#else
 	long index;
 	Item profileOffsetItem;
 	DataReset(&profileOffsetItem.data);
@@ -15884,6 +15998,7 @@ Profile * fiftyoneDegreesProfileGetByProfileIdIndirect(
 	}
 
 	return result;
+#endif
 }
 
 fiftyoneDegreesProfile* fiftyoneDegreesProfileGetByProfileId(
@@ -15892,6 +16007,18 @@ fiftyoneDegreesProfile* fiftyoneDegreesProfileGetByProfileId(
 	const uint32_t profileId,
 	fiftyoneDegreesCollectionItem *item,
 	fiftyoneDegreesException *exception) {
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain profile ids, so this method
+	// cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(profileOffsets);
+	UNREFERENCED_PARAMETER(profiles);
+	UNREFERENCED_PARAMETER(profileId);
+	UNREFERENCED_PARAMETER(item);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED);
+	return NULL;
+#else
 	uint32_t profileOffset;
 	Profile* profile = NULL;
 	if (fiftyoneDegreesProfileGetOffsetForProfileId(
@@ -15906,6 +16033,7 @@ fiftyoneDegreesProfile* fiftyoneDegreesProfileGetByProfileId(
 			exception);
 	}
 	return profile;
+#endif
 }
 
 fiftyoneDegreesProfile* fiftyoneDegreesProfileGetByIndex(
@@ -15951,7 +16079,8 @@ void* fiftyoneDegreesProfileReadFromFile(
 	const CollectionKey * const key,
 	fiftyoneDegreesData *data,
 	fiftyoneDegreesException *exception) {
-	Profile profile = { 0, 0, 0 };
+
+	Profile profile = NULL_PROFILE;
 	return CollectionReadFileVariable(
 		file,
 		data,
@@ -15995,6 +16124,21 @@ uint32_t fiftyoneDegreesProfileIterateValuesForPropertyWithIndex(
 	void* state,
 	fiftyoneDegreesProfileIterateMethod callback,
 	fiftyoneDegreesException* exception) {
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain the indices property profile
+	// lookup, so this method cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(values);
+	UNREFERENCED_PARAMETER(index);
+	UNREFERENCED_PARAMETER(availablePropertyIndex);
+	UNREFERENCED_PARAMETER(profile);
+	UNREFERENCED_PARAMETER(property);
+	UNREFERENCED_PARAMETER(state);
+	UNREFERENCED_PARAMETER(callback);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED);
+	return 0;
+#else
 	uint32_t i = IndicesPropertyProfileLookup(
 		index,
 		profile->profileId,
@@ -16011,6 +16155,7 @@ uint32_t fiftyoneDegreesProfileIterateValuesForPropertyWithIndex(
 			exception);
 	}
 	return 0;
+#endif
 }
 
 uint32_t fiftyoneDegreesProfileIterateProfilesForPropertyAndValue(
@@ -16184,7 +16329,7 @@ uint32_t fiftyoneDegreesProfileIterateValueIndexes(
 	DataReset(&valueItem.data);
 
 	// For all the possible values associated with the profile.
-	for (uint32_t i = 0; cont && i < profile->valueCount; i++) {
+	for (ProfileValuesCountType i = 0; cont && i < profile->valueCount; i++) {
 
 		// Get the value to check if it relates to a required property.
 		valueIndex = *(valueIndexes + i);
@@ -17565,6 +17710,8 @@ static StatusMessage messages[] = {
     { FILE_TOO_LARGE, "File size exceeds malloc capabilities."},
     { UNKNOWN_GEOMETRY, "Unsupported geometry type found in WKB."},
     { RESERVED_GEOMETRY, "Geometry type found in WKB is abstract or reserved."},
+	{ NOT_IMPLEMENTED, "The method is not implemented. This is usually because "
+		"a compile flag has been set which removes the functionality."},
 };
 
 static char defaultMessage[] = "Status code %i does not have any message text.";
@@ -19118,12 +19265,24 @@ const String* fiftyoneDegreesValueGetDescription(
 	const Value *value,
 	CollectionItem *item,
 	Exception *exception) {
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+	// A reduced size data file does not contain value descriptions, so this
+	// method cannot be implemented.
+#ifdef _MSC_VER
+	UNREFERENCED_PARAMETER(strings);
+	UNREFERENCED_PARAMETER(value);
+	UNREFERENCED_PARAMETER(item);
+#endif
+	EXCEPTION_SET(NOT_IMPLEMENTED)
+	return NULL;
+#else
 	return &StoredBinaryValueGet(
 		strings,
 		value->descriptionOffset,
 		FIFTYONE_DEGREES_PROPERTY_VALUE_TYPE_STRING, // description is string
 		item,
 		exception)->stringValue;
+#endif
 }
 
 const String* fiftyoneDegreesValueGetUrl(

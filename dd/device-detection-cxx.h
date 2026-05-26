@@ -525,6 +525,9 @@ typedef enum e_fiftyone_degrees_status_code {
 	FIFTYONE_DEGREES_STATUS_FILE_TOO_LARGE, /**< File size exceeds malloc capabilities */
 	FIFTYONE_DEGREES_STATUS_UNKNOWN_GEOMETRY, /**< Unsupported geometry type found in WKB */
 	FIFTYONE_DEGREES_STATUS_RESERVED_GEOMETRY, /**< Geometry type found in WKB is abstract/reserved */
+	FIFTYONE_DEGREES_STATUS_NOT_IMPLEMENTED /**< The requested functionality is
+											not implemented. This is usually
+											because a compile flag is set. */
 } fiftyoneDegreesStatusCode;
 
 /**
@@ -6532,6 +6535,17 @@ EXTERNAL uint32_t fiftyoneDegreesIndicesPropertyProfileLookup(
 
 #endif
 
+typedef
+#ifdef FIFTYONE_DEGREES_REDUCED_FILE
+// In a reduced size data file, there is no profile id, and the value count
+// is written as 2 bytes.
+uint16_t
+#else
+// Full size data file contains a profile id, and 32 bit value count.
+uint32_t
+#endif
+fiftyoneDegreesProfileValuesCountType; /**< Type for fiftyoneDegreesProfile::valueCount */
+
 /**
  * Encapsulates a profile stored within a data set. A profile pertains to a
  * specific set of values for the properties relating to a single component.
@@ -6540,8 +6554,12 @@ EXTERNAL uint32_t fiftyoneDegreesIndicesPropertyProfileLookup(
 typedef struct fiftyoneDegrees_profile_t {
 	const byte componentIndex; /**< The index of the component the profile
 	                               relates to */
+#ifndef FIFTYONE_DEGREES_REDUCED_FILE
+	// In a reduced size data file, there is no profile id.
+	// Full size data file contains a profile id.
 	const uint32_t profileId; /**< Unique id of the profile */
-	const uint32_t valueCount; /**< The number of values within the profile */
+#endif
+	const fiftyoneDegreesProfileValuesCountType valueCount; /**< The number of values within the profile */
 } fiftyoneDegreesProfile;
 #pragma pack(pop)
 
@@ -6553,7 +6571,9 @@ typedef struct fiftyoneDegrees_profile_t {
  */
 #pragma pack(push, 4)
 typedef struct fiftyoneDegrees_profile_offset_t {
+#ifndef FIFTYONE_DEGREES_REDUCED_FILE
 	const uint32_t profileId; /**< The unique Id of the profile */
+#endif
 	const uint32_t offset; /**< Offset to the profile in the profiles structure */
 } fiftyoneDegreesProfileOffset;
 #pragma pack(pop)
@@ -6892,8 +6912,11 @@ typedef struct fiftyoneDegrees_value_t {
 	const int16_t propertyIndex; /**< Index of the property the value relates to */
 	const int32_t nameOffset; /**< The offset in the strings structure to the 
 	                              value name */
+#ifndef FIFTYONE_DEGREES_REDUCED_FILE
+	// Descriptions are not included in reduced size data files.
 	const int32_t descriptionOffset; /**< The offset in the strings structure to
 	                                     the value description */
+#endif
 	const int32_t urlOffsetOrWeight; /**< The offset in the strings structure to
 	                                     the value URL, or a masked weight if
 	                                     upper 2 bytes == 0xFF00 (i.e. value
@@ -10336,6 +10359,7 @@ MAP_TYPE(TreeNode)
 MAP_TYPE(TreeRoot)
 MAP_TYPE(ProfileOffset)
 MAP_TYPE(ProfileIterateMethod)
+MAP_TYPE(ProfileValuesCountType)
 MAP_TYPE(Float)
 MAP_TYPE(KeyValuePair)
 MAP_TYPE(HeaderID)
@@ -10651,6 +10675,7 @@ MAP_TYPE(WeightedItemList)
 #define FILE_TOO_LARGE FIFTYONE_DEGREES_STATUS_FILE_TOO_LARGE /**< Synonym for #FIFTYONE_DEGREES_STATUS_FILE_TOO_LARGE status code.*/
 #define UNKNOWN_GEOMETRY FIFTYONE_DEGREES_STATUS_UNKNOWN_GEOMETRY /**< Synonym for #FIFTYONE_DEGREES_STATUS_UNKNOWN_GEOMETRY status code.*/
 #define RESERVED_GEOMETRY FIFTYONE_DEGREES_STATUS_RESERVED_GEOMETRY /**< Synonym for #FIFTYONE_DEGREES_STATUS_RESERVED_GEOMETRY status code.*/
+#define NOT_IMPLEMENTED FIFTYONE_DEGREES_STATUS_NOT_IMPLEMENTED /**< Synonym for #FIFTYONE_DEGREES_STATUS_NOT_IMPLEMENTED. */
 #define IPV6_LENGTH FIFTYONE_DEGREES_IPV6_LENGTH /**< Synonym for #FIFTYONE_DEGREES_IPV6_LENGTH macro.*/
 #define IPV4_LENGTH FIFTYONE_DEGREES_IPV4_LENGTH /**< Synonym for #FIFTYONE_DEGREES_IPV4_LENGTH macro.*/
 #define IP_TYPE_IPV4 FIFTYONE_DEGREES_IP_TYPE_IPV4 /**< Synonym for #FIFTYONE_DEGREES_IP_TYPE_IPV4 enum value.*/
