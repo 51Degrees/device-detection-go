@@ -41,7 +41,7 @@ func main() {
 				onpremise.WithDataFile(params.DataFile),
 
 				// For automatic updates to work you will need to provide a license key.
-				// A license key can be obtained with a subscription from https://51degrees.com/pricing
+				// A license key can be obtained with a subscription from https://51degrees.com/pricing?utm_source=code&utm_medium=example&utm_campaign=device-detection-go&utm_content=examples-onpremise-update_polling_interval-update_polling_interval.go&utm_term=main
 				onpremise.WithLicenseKey(params.LicenseKey),
 
 				// Enable automatic updates.

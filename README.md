@@ -1,6 +1,6 @@
 # 51Degrees Device Detection Engines
 
-![51Degrees](https://51degrees.com/DesktopModules/FiftyOne/Distributor/Logo.ashx?utm_source=github&utm_medium=repository&utm_content=readme_main&utm_campaign=go-open-source "Data rewards the curious") **Go Device Detection**
+![51Degrees](https://51degrees.com/img/logo.png?utm_source=github&utm_medium=readme&utm_campaign=device-detection-go&utm_content=readme.md&utm_term=51degrees-device-detection-engines "Data rewards the curious") **Go Device Detection**
 
 ## Introduction
 
@@ -34,7 +34,7 @@ Or download [51Degrees-LiteV4.1.hash](https://github.com/51Degrees/device-detect
 
 This 'lite' file has a significantly reduced set of properties. To obtain a
 file with a more complete set of device properties see the
-[51Degrees website](https://51degrees.com/pricing).
+[51Degrees website](https://51degrees.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=device-detection-go&utm_content=readme.md&utm_term=data-file).
 
 ### Software
 
@@ -58,7 +58,7 @@ This module name `device-detection-go` at path `github.com/51Degrees/device-dete
 
 This Go Lite version contains the following packages:
 - `dd` - a lower level API wrapping the C device detection library
-- `onpremise` - a higher level Engine API providing device detection and [automatic data file updates](https://51degrees.com/documentation/4.4/_features__automatic_datafile_updates.html)
+- `onpremise` - a higher level Engine API providing device detection and [automatic data file updates](https://51degrees.com/documentation/_features__automatic_datafile_updates.html?utm_source=github&utm_medium=readme&utm_campaign=device-detection-go&utm_content=readme.md&utm_term=module-and-packages)
 
 ## Build and Usage
 

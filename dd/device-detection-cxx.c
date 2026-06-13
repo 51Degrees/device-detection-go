@@ -17688,7 +17688,7 @@ static StatusMessage messages[] = {
 		"pool. Another way to avoid this is by using an in-memory "
 		"configuration, which avoids using file handles completely, and "
 		"removes any limit on concurrency. For info see "
-		"https://51degrees.com/documentation/4.5/_device_detection__features__concurrent_processing.html?utm_source=code&utm_medium=comment&utm_campaign=common-cxx&utm_content=status.c&utm_term=insufficient_handles"},
+		"https://51degrees.com/documentation/4.5/_device_detection__features__concurrent_processing.html?utm_source=code&utm_medium=comment&utm_campaign=device-detection-go&utm_content=dd-device-detection-cxx.c&utm_term=insufficient_handles"},
 	{ COLLECTION_INDEX_OUT_OF_RANGE,
 		"Index used to retrieve an item from a collection was out of range." },
 	{ COLLECTION_OFFSET_OUT_OF_RANGE,
@@ -20971,7 +20971,7 @@ void fiftyoneDegreesResultsUserAgentFree(
  * -
  * [getHighEntropyValues()](https://developer.mozilla.org/en-US/docs/Web/API/NavigatorUAData/getHighEntropyValues)
  * -
- * [device.sua](https://51degrees.com/blog/openrtb-structured-user-agent-and-user-agent-client-hints)
+ * [device.sua](https://51degrees.com/blog/openrtb-structured-user-agent-and-user-agent-client-hints?utm_source=code&utm_medium=comment&utm_campaign=device-detection-go&utm_content=dd-device-detection-cxx.c&utm_term=top)
  * - [OpenRTB 2.6
  * spec](https://iabtechlab.com/wp-content/uploads/2022/04/OpenRTB-2-6_FINAL.pdf)
  *
@@ -28720,7 +28720,7 @@ const char* fiftyoneDegreesResultsHashGetNoValueReasonMessage(
 	case FIFTYONE_DEGREES_RESULTS_NO_VALUE_REASON_NULL_PROFILE:
 	    return "No matching profiles could be found for the supplied evidence. "
 	        "A 'best guess' can be returned by configuring more lenient "
-	        "matching rules. See https://51degrees.com/documentation/_device_detection__features__false_positive_control.html";
+	        "matching rules. See https://51degrees.com/documentation/_device_detection__features__false_positive_control.html?utm_source=code&utm_medium=comment&utm_campaign=device-detection-go&utm_content=dd-device-detection-cxx.c&utm_term=fiftyone_degrees_results_no_value_reason_null_profile";
 	case FIFTYONE_DEGREES_RESULTS_NO_VALUE_REASON_UNKNOWN:
 	default:
 		return "The reason for missing values is unknown.";
