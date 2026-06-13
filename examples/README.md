@@ -1,6 +1,6 @@
 # 51Degrees Device Detection Engines Examples
 
-![51Degrees](https://51degrees.com/DesktopModules/FiftyOne/Distributor/Logo.ashx?utm_source=github&utm_medium=repository&utm_content=readme_main&utm_campaign=go-open-source "Data rewards the curious") **Examples for Device Detection in Go**
+![51Degrees](https://51degrees.com/img/logo.png?utm_source=github&utm_medium=readme&utm_campaign=device-detection-go&utm_content=examples-readme.md&utm_term=51degrees-device-detection-engines-examples "Data rewards the curious") **Examples for Device Detection in Go**
 
 ## Introduction
 

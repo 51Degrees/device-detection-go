@@ -4,7 +4,7 @@
 
 ## update_polling_interval
 
-Demonstrates how to set up periodic data file updates by either polling the 51degrees [distributor](https://51degrees.com/documentation/4.4/_info__distributor.html) server or a custom URL. 
+Demonstrates how to set up periodic data file updates by either polling the 51degrees [distributor](https://51degrees.com/documentation/_info__distributor.html?utm_source=github&utm_medium=readme&utm_campaign=device-detection-go&utm_content=examples-onpremise-readme.md&utm_term=update_polling_interval) server or a custom URL. 
 
 To run the example, execute the following command:
 
