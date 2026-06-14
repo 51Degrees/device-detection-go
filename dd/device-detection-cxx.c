@@ -9340,24 +9340,27 @@ static CacheNode *cacheGetNextFree(CacheShard *shard) {
  * free nodes
  */
 static CacheNode* cacheLoad(
-	CacheShard *shard, 
-	const void *key, 
+	CacheShard *shard,
+	const void *key,
+	int64_t keyHash,
 	Exception *exception) {
 	CacheNode *node = cacheGetNextFree(shard);
 	if (node != NULL) {
 		node->activeCount = 1;
 
-		// Load the data into then node setting the valid flag to indicate if 
+		// Load the data into then node setting the valid flag to indicate if
 		// the item was loaded correctly.
 		shard->cache->load(
-			shard->cache->loaderState, 
-			&node->data, 
-			key, 
+			shard->cache->loaderState,
+			&node->data,
+			key,
 			exception);
 
-		// If not exception then add the node to the head of the tree.
+		// If not exception then add the node to the head of the tree. The key
+		// hash was already computed by the caller, so reuse it rather than
+		// invoking the (potentially expensive) hash function a second time.
 		if (EXCEPTION_OKAY) {
-			node->tree.key = shard->cache->hash(key);
+			node->tree.key = keyHash;
 			TreeInsert(&node->tree);
 		}
 	}
@@ -9476,8 +9479,8 @@ fiftyoneDegreesCacheNode* fiftyoneDegreesCacheGet(
 	}
 	else {
 
-		// The key does not exist so load it.
-		node = cacheLoad(shard, key, exception);
+		// The key does not exist so load it, reusing the hash already computed.
+		node = cacheLoad(shard, key, keyHash, exception);
 		cache->misses++;
 	}
 
@@ -17688,7 +17691,7 @@ static StatusMessage messages[] = {
 		"pool. Another way to avoid this is by using an in-memory "
 		"configuration, which avoids using file handles completely, and "
 		"removes any limit on concurrency. For info see "
-		"https://51degrees.com/documentation/4.5/_device_detection__features__concurrent_processing.html?utm_source=code&utm_medium=comment&utm_campaign=device-detection-go&utm_content=dd-device-detection-cxx.c&utm_term=insufficient_handles"},
+		"https://51degrees.com/documentation/4.5/_device_detection__features__concurrent_processing.html?utm_source=code&utm_medium=comment&utm_campaign=common-cxx&utm_content=status.c&utm_term=insufficient_handles"},
 	{ COLLECTION_INDEX_OUT_OF_RANGE,
 		"Index used to retrieve an item from a collection was out of range." },
 	{ COLLECTION_OFFSET_OUT_OF_RANGE,
@@ -18031,26 +18034,41 @@ const fiftyoneDegreesString* fiftyoneDegreesStringGet(
 		exception);
 }
 
+/**
+ * Lower cases a single ASCII byte branchlessly. 'A'-'Z' are mapped to 'a'-'z';
+ * every other byte value is returned unchanged. Unlike tolower() this is
+ * locale independent, performs no table lookup, and is well defined for bytes
+ * >= 0x80 (a negative signed char passed to tolower() is undefined behaviour).
+ * The (unsigned)(c - 'A') < 26u test is true only for the 26 upper case bytes.
+ */
+static int toLowerAscii(unsigned char c) {
+	return (int)c + (((unsigned)(c - 'A') < 26u) ? 32 : 0);
+}
+
 int fiftyoneDegreesStringCompare(const char *a, const char *b) {
-	for (; *a != '\0' && *b != '\0'; a++, b++) {
-		int d = tolower(*a) - tolower(*b);
+	const unsigned char *ua = (const unsigned char*)a;
+	const unsigned char *ub = (const unsigned char*)b;
+	for (; *ua != '\0' && *ub != '\0'; ua++, ub++) {
+		int d = toLowerAscii(*ua) - toLowerAscii(*ub);
 		if (d != 0) {
 			return d;
 		}
 	}
-	if (*a == '\0' && *b != '\0') return -1;
-	if (*a != '\0' && *b == '\0') return 1;
-	assert(*a == '\0' && *b == '\0');
+	if (*ua == '\0' && *ub != '\0') return -1;
+	if (*ua != '\0' && *ub == '\0') return 1;
+	assert(*ua == '\0' && *ub == '\0');
 	return 0;
 }
 
 int fiftyoneDegreesStringCompareLength(
-	char const *a, 
-	char const *b, 
+	char const *a,
+	char const *b,
 	size_t length) {
+	const unsigned char *ua = (const unsigned char*)a;
+	const unsigned char *ub = (const unsigned char*)b;
 	size_t i;
-	for (i = 0; i < length; a++, b++, i++) {
-		int d = tolower(*a) - tolower(*b);
+	for (i = 0; i < length; ua++, ub++, i++) {
+		int d = toLowerAscii(*ua) - toLowerAscii(*ub);
 		if (d != 0) {
 			return d;
 		}
@@ -20971,7 +20989,7 @@ void fiftyoneDegreesResultsUserAgentFree(
  * -
  * [getHighEntropyValues()](https://developer.mozilla.org/en-US/docs/Web/API/NavigatorUAData/getHighEntropyValues)
  * -
- * [device.sua](https://51degrees.com/blog/openrtb-structured-user-agent-and-user-agent-client-hints?utm_source=code&utm_medium=comment&utm_campaign=device-detection-go&utm_content=dd-device-detection-cxx.c&utm_term=top)
+ * [device.sua](https://51degrees.com/blog/openrtb-structured-user-agent-and-user-agent-client-hints?utm_source=code&utm_medium=comment&utm_campaign=device-detection-cxx&utm_content=transform.h&utm_term=top)
  * - [OpenRTB 2.6
  * spec](https://iabtechlab.com/wp-content/uploads/2022/04/OpenRTB-2-6_FINAL.pdf)
  *
@@ -25462,18 +25480,25 @@ static void setNextNode(detectionState *state, int32_t offset) {
  */
 static bool setInitialHash(detectionState *state) {
 	bool result = false;
-	const size_t length = state->firstIndex + NODE(state)->length;
+	const GraphNode * const node = NODE(state);
+	const size_t length = state->firstIndex + node->length;
 	state->hash = 0;
 	// Hash over the whole length using:
 	// h[i] = (c[i]*p^(L-1)) + (c[i+1]*p^(L-2)) ... + (c[i+L]*p^(0))
 	if (length <= state->result->b.targetUserAgentLength) {
-		state->power = POWERS[NODE(state)->length];
+		// Cache the loop-invariant base pointer and accumulate in a local so
+		// the per-character work stays in registers rather than re-walking the
+		// state->result->b.targetUserAgent pointer chain on every iteration.
+		const char * const targetUserAgent = state->result->b.targetUserAgent;
+		uint32_t hash = 0;
+		state->power = POWERS[node->length];
 		for (size_t i = state->firstIndex; i < length; i++) {
 			// Increment the powers of the prime coefficients.
-			state->hash *= RK_PRIME;
+			hash *= RK_PRIME;
 			// Add the next character to the right.
-			state->hash += state->result->b.targetUserAgent[i];
+			hash += targetUserAgent[i];
 		}
+		state->hash = hash;
 		state->currentIndex = state->firstIndex;
 		result = true;
 	}
@@ -25509,22 +25534,25 @@ static bool setInitialHash(detectionState *state) {
  */
 static int advanceHash(detectionState *state) {
 	int result = 0;
-	size_t nextAddIndex;
 	// Roll the hash on by one character using:
 	// h[n] = p*h[n-1] - c[n-1]*p^(L) + c[i+L]
 	if (state->currentIndex < state->lastIndex) {
-		nextAddIndex = state->currentIndex + NODE(state)->length;
+		const size_t nextAddIndex = state->currentIndex + NODE(state)->length;
 		if (nextAddIndex < state->result->b.targetUserAgentLength) {
+			// Cache the base pointer so the two character reads below share a
+			// single walk of the targetUserAgent pointer chain.
+			const char * const targetUserAgent =
+				state->result->b.targetUserAgent;
 			// Increment the powers of the prime coefficients.
 			// p*h[n-1]
 			state->hash *= RK_PRIME;
 			// Add the next character to the right.
 			// + c[i+L]
-			state->hash += state->result->b.targetUserAgent[nextAddIndex];
+			state->hash += targetUserAgent[nextAddIndex];
 			// Remove the character that has dropped off the left.
 			// - c[n-1]*p^(L)
 			state->hash -= (state->power *
-				state->result->b.targetUserAgent[state->currentIndex]);
+				targetUserAgent[state->currentIndex]);
 			// Increment the current index to the start index of the hash
 			// which was just calculated.
 			state->currentIndex++;
@@ -25624,13 +25652,26 @@ static void evaluateListNode(detectionState *state) {
 	else {
 		// Set the match structure with the initial hash value.
 		if (setInitialHash(state)) {
-			// Loop between the first and last indexes checking the hash
-			// values.
-			do {
-				nodeHash = GraphGetMatchingHashFromListNode(
-					NODE(state), 
-					state->hash);
-			} while (nodeHash == NULL && advanceHash(state));
+			// The table vs binary-search decision depends only on the node's
+			// modulo, which is constant for the duration of this scan. Resolve
+			// it once here rather than re-testing it for every rolled hash.
+			GraphNode * const node = NODE(state);
+			if (node->modulo == 0) {
+				// Loop between the first and last indexes checking the hash
+				// values.
+				do {
+					nodeHash = GraphGetMatchingHashFromListNodeSearch(
+						node,
+						state->hash);
+				} while (nodeHash == NULL && advanceHash(state));
+			}
+			else {
+				do {
+					nodeHash = GraphGetMatchingHashFromListNodeTable(
+						node,
+						state->hash);
+				} while (nodeHash == NULL && advanceHash(state));
+			}
 		}
 	}
 	
@@ -28720,7 +28761,7 @@ const char* fiftyoneDegreesResultsHashGetNoValueReasonMessage(
 	case FIFTYONE_DEGREES_RESULTS_NO_VALUE_REASON_NULL_PROFILE:
 	    return "No matching profiles could be found for the supplied evidence. "
 	        "A 'best guess' can be returned by configuring more lenient "
-	        "matching rules. See https://51degrees.com/documentation/_device_detection__features__false_positive_control.html?utm_source=code&utm_medium=comment&utm_campaign=device-detection-go&utm_content=dd-device-detection-cxx.c&utm_term=fiftyone_degrees_results_no_value_reason_null_profile";
+	        "matching rules. See https://51degrees.com/documentation/_device_detection__features__false_positive_control.html?utm_source=code&utm_medium=comment&utm_campaign=device-detection-cxx&utm_content=hash.c&utm_term=fiftyone_degrees_results_no_value_reason_null_profile";
 	case FIFTYONE_DEGREES_RESULTS_NO_VALUE_REASON_UNKNOWN:
 	default:
 		return "The reason for missing values is unknown.";
