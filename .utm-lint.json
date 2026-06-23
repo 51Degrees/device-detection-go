@@ -1,0 +1,5 @@
+{
+  "exclude": [
+    "^dd/device-detection-cxx\\.[ch]$"
+  ]
+}
