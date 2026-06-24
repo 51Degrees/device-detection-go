@@ -80,7 +80,6 @@ func NewResultsHash(
 	overridesCapacity uint32) *ResultsHash {
 	r := C.ResultsHashCreate(
 		manager.CPtr,
-		C.uint32_t(uaCapacity),
 		C.uint32_t(overridesCapacity))
 
 	// Map the items list to Go slice. This is done once so every access to
