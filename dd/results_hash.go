@@ -73,14 +73,19 @@ func resultsFinalizer(res *ResultsHash) {
 }
 
 // NewResultsHash create a new ResultsHash object. This matches the C API
-// fiftyoneDegreesResultsHashCreate.
+// fiftyoneDegreesResultsHashCreate. uaCapacity maps to the deprecated
+// userAgentCapacity, which upstream no longer uses. We call the underlying
+// function directly rather than the ResultsHashCreate synonym because upstream
+// turned the synonym into a two-argument function-like macro, which cgo cannot
+// expand. Passing 0 mirrors what that macro injects; uaCapacity is ignored but
+// kept to keep the public signature stable for callers.
 func NewResultsHash(
 	manager *ResourceManager,
 	uaCapacity uint32,
 	overridesCapacity uint32) *ResultsHash {
-	r := C.ResultsHashCreate(
+	r := C.fiftyoneDegreesResultsHashCreate(
 		manager.CPtr,
-		C.uint32_t(uaCapacity),
+		0,
 		C.uint32_t(overridesCapacity))
 
 	// Map the items list to Go slice. This is done once so every access to
