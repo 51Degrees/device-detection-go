@@ -9934,6 +9934,21 @@ EXTERNAL uint64_t fiftyoneDegreesProcessGetId();
  * - pair ::= key separator white-space value
  * - documents ::= document* docs-end
  * - document = doc-start linefeed pair*
+ *
+ * Quoted values:
+ * Evidence files can contain values wrapped in quotes when they contain
+ * special characters. The reader removes the wrapping quotes so the
+ * original value is recovered:
+ * - A value wrapped in single quotes, e.g. 'value', has them removed.
+ * - A value wrapped in double quotes is only unwrapped when the first
+ *   non-whitespace character inside the quotes is a single quote, e.g.
+ *   "'value" is the form a serializer uses for a value that begins with a
+ *   single quote. This is the only case in which such a serializer emits
+ *   double quotes, so double quotes are otherwise left in place. In particular
+ *   Client Hint headers such as "Chromium";v="8" keep their double quotes,
+ *   which are part of the value.
+ * - Single quotes that are not the first non-whitespace character of the value
+ *   are part of the value and are left untouched.
  */
 
 /**
