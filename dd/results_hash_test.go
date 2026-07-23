@@ -134,10 +134,14 @@ func TestMatchMetrics(t *testing.T) {
 			t.Error("Expected method to not be None.")
 		}
 
-		// Check User-Agents
-		if results.UserAgents() != 1 {
-			t.Error("Expected number of used User-Agents to be 1 as there was " +
-				"only one input.")
+		// Check User-Agents. Since the detection result shape was unified in
+		// device-detection-cxx (issue #362), a single User-Agent produces one
+		// result - and so one matched User-Agent - per component the engine
+		// populates, rather than exactly one overall. The number depends on the
+		// data file, so check that at least one is returned.
+		if results.UserAgents() < 1 {
+			t.Errorf("Expected at least one used User-Agent, but got %d",
+				results.UserAgents())
 		}
 
 		// Check match User-Agent string
