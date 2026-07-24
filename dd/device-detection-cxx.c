@@ -24193,7 +24193,17 @@ fiftyoneDegreesHashInitManagerFromMemory(
 
 /**
  * Processes the evidence value pairs in the evidence collection and
- * populates the result in the results structure. 
+ * populates the result in the results structure.
+ *
+ * The result shape is a deterministic function of the data set, not of how
+ * many evidence pairs are supplied. One result item is produced per available
+ * component (results->count == componentsAvailableCount when every available
+ * component resolves from the evidence, as it does for a User-Agent). Adding a
+ * redundant, lower-precedence pair that resolves to the same value (for
+ * example both 'query.user-agent' and 'header.user-agent') therefore does not
+ * change the number or layout of result items. This is the single detection
+ * entry point; ResultsHashFromUserAgent is a thin wrapper over it.
+ *
  * The 'query' and 'cookie' evidence key prefixes are used to get values which
  * dynamically override values returned from device detection. 'query' prefixes 
  * are also used in preference to 'header' for HTTP header values that are 
@@ -24218,6 +24228,13 @@ EXTERNAL void fiftyoneDegreesResultsHashFromEvidence(
 /**
  * Process a single User-Agent and populate the device offsets in the results
  * structure.
+ *
+ * This is a thin convenience wrapper: the User-Agent is wrapped in a
+ * single 'header.user-agent' evidence pair and passed to
+ * #fiftyoneDegreesResultsHashFromEvidence, so the result shape is identical
+ * to processing the same User-Agent as evidence (one item per available
+ * component, not a single coalesced item). The userAgent string must remain
+ * valid for the lifetime of the results, as it is referenced, not copied.
  * @param results preallocated results structure to populate
  * @param userAgent string to process
  * @param userAgentLength of the User-Agent string
@@ -25178,15 +25195,6 @@ typedef struct detection_component_state_t {
 } detectionComponentState;
 
 /**
- * State structure for checking that there is a single User-Agent string in the
- * evidence.
- */
-typedef struct detection_ua_state_t {
-	EvidenceKeyValuePair* pair;
-	int count;
-} detectionUaState;
-
-/**
  * Used to find an existing evidence pair for the header.
  */
 typedef struct set_special_headers_find_state_t {
@@ -26078,95 +26086,6 @@ static bool processRoots(
 	}
 
 	return matched;
-}
-
-static void setResultFromUserAgentComponentIndex(
-	detectionState* state,
-	uint32_t componentIndex,
-	Item* rootNodesItem,
-	uint32_t httpHeaderUniqueId) {
-	const ComponentKeyValuePair* graphKey;
-	HashRootNodes* rootNodes;
-	uint32_t headerIndex;
-	Exception* exception = state->exception;
-	Component* component = COMPONENT(state->dataSet, componentIndex);
-	bool complete = false;
-	for (headerIndex = 0;
-		EXCEPTION_OKAY &&
-		component != NULL &&
-		headerIndex < component->keyValuesCount &&
-		complete == false;
-		headerIndex++) {
-		graphKey = &(&component->firstKeyValuePair)[headerIndex];
-		if (graphKey->key == httpHeaderUniqueId) {
-			rootNodes = (HashRootNodes*)getRootNodes(
-				state->dataSet,
-				graphKey->value,
-				rootNodesItem,
-				state->exception);
-			if (rootNodes != NULL && EXCEPTION_OKAY) {
-				if (processRoots(
-					state, 
-					state->dataSet,
-					componentIndex,
-					component,
-					rootNodes) == true) {
-					addProfile(
-						state->result,
-						(byte)componentIndex,
-						state->profileOffset,
-						false);
-					complete = true;
-				}
-				COLLECTION_RELEASE(state->dataSet->rootNodes, rootNodesItem);
-			}
-		}
-	}
-}
-
-static void setResultFromUserAgent(
-	ResultHash* result,
-	DataSetHash* dataSet,
-	Exception* exception) {
-	detectionState state;
-	uint32_t componentIndex;
-	Item rootNodesItem;
-	uint32_t headerId = dataSet->b.b.uniqueHeaders->items[
-		result->b.uniqueHttpHeaderIndex].headerId;
-	DataReset(&rootNodesItem.data);
-	detectionStateInit(&state, result, dataSet, exception);
-	for (componentIndex = 0;
-		componentIndex < dataSet->componentsList.count;
-		componentIndex++) {
-		if (dataSet->componentsAvailable[componentIndex] == true) {
-			setResultFromUserAgentComponentIndex(
-				&state,
-				componentIndex,
-				&rootNodesItem,
-				headerId);
-		}
-	}
-	state.result->iterations = state.iterations;
-	state.result->drift = state.drift;
-	state.result->difference = state.difference;
-	state.result->matchedNodes = state.matchedNodes;
-	if (state.result->b.matchedUserAgent != NULL) {
-		state.result->b.matchedUserAgent[
-			MIN(state.result->b.targetUserAgentLength,
-				state.result->b.matchedUserAgentLength)] = '\0';
-	}
-	if (state.matchedNodes == 0) {
-		state.result->method = FIFTYONE_DEGREES_HASH_MATCH_METHOD_NONE;
-	}
-	else if (state.performanceMatches > 0 && state.predictiveMatches > 0) {
-		state.result->method = FIFTYONE_DEGREES_HASH_MATCH_METHOD_COMBINED;
-	}
-	else if (state.performanceMatches > 0) {
-		state.result->method = FIFTYONE_DEGREES_HASH_MATCH_METHOD_PERFORMANCE;
-	}
-	else if (state.predictiveMatches > 0) {
-		state.result->method = FIFTYONE_DEGREES_HASH_MATCH_METHOD_PREDICTIVE;
-	}
 }
 
 /**
@@ -28033,15 +27952,6 @@ static void resultsHashFromEvidence_handleAllEvidence(
 	}
 }
 
-static bool resultsHashFromEvidence_findUa(
-	void* state, 
-	EvidenceKeyValuePair *pair) {
-	detectionUaState *s = (detectionUaState*)state;
-	s->pair = pair;
-	s->count++;
-	return true;
-}
-
 static void resultsHashReset(ResultsHash* results) {
 	DataSetHash* dataSet = (DataSetHash*)results->b.b.dataSet;
 	for (uint32_t i = 0; i < results->count; i++) {
@@ -28055,38 +27965,11 @@ void fiftyoneDegreesResultsHashFromEvidence(
 	fiftyoneDegreesEvidenceKeyValuePairArray *evidence,
 	fiftyoneDegreesException *exception) {
 	DataSetHash* dataSet = (DataSetHash*)results->b.b.dataSet;
-	detectionUaState uaState = { NULL, 0 };
 
 	// Check for null evidence and set an exception if not present.
 	if (evidence == (EvidenceKeyValuePairArray*)NULL) {
 		EXCEPTION_SET(NULL_POINTER);
 		return;
-	}
-	
-	// If there is only one item of evidence and it's the User-Agent then use
-	// the simpler method that does not consider other headers, or the 
-	// possibility of profile id and device id overrides. Does not iterate the
-	// evidence as there is check to confirm only one entry.
-	EvidenceIterate(
-		evidence,
-		INT_MAX,
-		&uaState,
-		resultsHashFromEvidence_findUa);
-	if (uaState.count == 1) {
-		Header* ua = &dataSet->b.b.uniqueHeaders->items[
-			dataSet->b.uniqueUserAgentHeaderIndex];
-		if (uaState.pair->item.keyLength == ua->nameLength &&
-			StringCompareLength(
-				uaState.pair->item.key,
-				ua->name,
-				ua->nameLength) == 0) {
-			ResultsHashFromUserAgent(
-				results,
-				uaState.pair->parsedValue,
-				uaState.pair->parsedLength,
-				exception);
-			return;
-		}
 	}
 
 	// Initialise the state.
@@ -28168,22 +28051,49 @@ void fiftyoneDegreesResultsHashFromUserAgent(
 	fiftyoneDegreesException *exception) {
 	DataSetHash *dataSet = (DataSetHash*)results->b.b.dataSet;
 
-	hashResultReset(dataSet, &results->items[0]);
-	results->items[0].b.targetUserAgent = (char*)userAgent;
-	results->items[0].b.targetUserAgentLength = (int)userAgentLength;
-	results->items[0].b.uniqueHttpHeaderIndex = 
-		dataSet->b.uniqueUserAgentHeaderIndex;
-	results->count = 1;
+	// Wrap the User-Agent in a single-pair evidence array keyed on the data
+	// set's User-Agent header and delegate to the evidence-driven detection,
+	// which is now the single detection implementation. A User-Agent processed
+	// here therefore yields exactly the same results (one item per available
+	// component) as the same User-Agent passed through ResultsHashFromEvidence.
+	// The evidence pair aliases the caller's string (parsedValue == item.value
+	// for a header prefix, no copy), so the lifetime contract is unchanged: the
+	// caller must keep userAgent alive while the results are in use.
+	//
+	// The array and its single item are built on the stack to avoid a heap
+	// allocation on this hot, UA-only detection path. EvidenceAddPair fills the
+	// item and never grows the array (capacity 1, one pair), so no 'next' block
+	// is allocated and there is nothing to free.
+	Header* uaHeader = &dataSet->b.b.uniqueHeaders->items[
+		dataSet->b.uniqueUserAgentHeaderIndex];
+	// Zero-initialise: EvidenceAddPair sets prefix, item, parsedValue and
+	// header but not parsedLength, which would otherwise be stack garbage.
+	EvidenceKeyValuePair pairStorage = { FIFTYONE_DEGREES_EVIDENCE_IGNORE };
+	EvidenceKeyValuePairArray evidence;
+	evidence.count = 0;
+	evidence.capacity = 1;
+	evidence.items = &pairStorage;
+	evidence.next = NULL;
+	evidence.prev = NULL;
 
-	if (results != (ResultsHash*)NULL) {
-		setResultFromUserAgent(
-			&results->items[0],
-			dataSet,
-			exception);
-		if (EXCEPTION_FAILED) {
-			return;
-		}
-	}
+	KeyValuePair uaPair = {
+		uaHeader->name,
+		uaHeader->nameLength,
+		userAgent,
+		userAgentLength };
+	EvidenceAddPair(
+		&evidence,
+		FIFTYONE_DEGREES_EVIDENCE_HTTP_HEADER_STRING,
+		uaPair);
+
+	ResultsHashFromEvidence(results, &evidence, exception);
+
+	// Guard the stack-allocation contract: if a future change makes the
+	// engine add pairs beyond the capacity of 1, EvidenceAddPair would heap
+	// allocate evidence.next, which would leak here (and a naive EvidenceFree
+	// would walk prev back to this stack block). Debug builds only; assert
+	// compiles out under NDEBUG (release).
+	assert(evidence.next == NULL);
 }
 
 // Adds the profile associated with the string version of the profile id 
@@ -28794,7 +28704,17 @@ fiftyoneDegreesResultsNoValueReason fiftyoneDegreesResultsHashGetNoValueReason(
 		exception);
 
 	if (result == NULL) {
-		return FIFTYONE_DEGREES_RESULTS_NO_VALUE_REASON_NO_RESULT_FOR_PROPERTY;
+		// In the unified result shape (issue #362) value selection returns no
+		// result for the property's component when none of the result items
+		// carries a matched profile for it and unmatched results are disabled
+		// (allowUnmatched == false). A result item still exists for the
+		// component (count > 0 is guaranteed by the NO_RESULTS check above) - it
+		// simply has a null profile - so report NULL_PROFILE, whose message
+		// points the caller at lenient matching, rather than the generic
+		// NO_RESULT_FOR_PROPERTY. Before #362 removed the single User-Agent fast
+		// path, this same case produced one coalesced result and correctly
+		// reported NULL_PROFILE.
+		return FIFTYONE_DEGREES_RESULTS_NO_VALUE_REASON_NULL_PROFILE;
 	}
 	else if (result->profileOffsets[property->componentIndex] == NULL_PROFILE_OFFSET) {
 		return FIFTYONE_DEGREES_RESULTS_NO_VALUE_REASON_NULL_PROFILE;
