@@ -241,32 +241,39 @@ func TestMatchMetricsByInvalidIndex(t *testing.T) {
 				uaMobile)
 		}
 
+		// The first index past the last result is always out of range. Since
+		// device-detection-cxx unified the result shape (#362), the number of
+		// results is the count of populated components rather than always one,
+		// so a hard-coded index is no longer guaranteed to be invalid - derive
+		// it from the count instead.
+		invalidIndex := uint32(results.Count())
+
 		// Check iterations
-		_, err := results.IterationsByIndex(2)
+		_, err := results.IterationsByIndex(invalidIndex)
 		if err == nil {
 			t.Error("Failed to return error when obtain iterations by invalid index")
 		}
 
 		// Check drift
-		_, err = results.DriftByIndex(2)
+		_, err = results.DriftByIndex(invalidIndex)
 		if err == nil {
 			t.Error("Failed to return error when obtain drift by invalid index")
 		}
 
 		// Check difference
-		_, err = results.DifferenceByIndex(2)
+		_, err = results.DifferenceByIndex(invalidIndex)
 		if err == nil {
 			t.Error("Failed to return error when obtain difference by invalid index")
 		}
 
 		// Check method
-		_, err = results.MethodByIndex(2)
+		_, err = results.MethodByIndex(invalidIndex)
 		if err == nil {
 			t.Error("Failed to return error when obtain method by invalid index")
 		}
 
 		// Check User-Agents
-		_, err = results.UserAgent(2)
+		_, err = results.UserAgent(results.Count())
 		if err == nil {
 			t.Error("Failed to return error when obtain matched User-Agent " +
 				"string by invalid index")
@@ -585,8 +592,12 @@ func TestDeviceIdByIndex(t *testing.T) {
 					testData)
 			}
 
-			// Check that error is thrown when access index out bound
-			_, err := results.DeviceIdByIndex(1)
+			// Check that error is thrown when access index out bound. The
+			// first index past the last result is always out of range; since
+			// device-detection-cxx unified the result shape (#362) the count
+			// is the number of populated components, not always one, so a
+			// hard-coded index is no longer guaranteed to be invalid.
+			_, err := results.DeviceIdByIndex(uint32(results.Count()))
 			if err == nil {
 				t.Errorf("Expect error to be thrown when accessing index out " +
 					"bound")
