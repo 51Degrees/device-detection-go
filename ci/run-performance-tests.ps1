@@ -1,31 +1,33 @@
-param ([Parameter(Mandatory)][string]$Name)
+<#
+.SYNOPSIS
+Runs the on-premise performance example and publishes the results JSON it emits.
+
+.DESCRIPTION
+The example writes its own results JSON in the shared schema, so this adapter
+only runs it and hands the file over to the shared publish step. It does not
+parse the example's console output: a figure scraped from printed text is tied
+to the exact wording and number formatting of that output, so a cosmetic change
+to the example would silently stop the performance graph updating.
+#>
+param (
+    [Parameter(Mandatory)][string]$RepoName,
+    [Parameter(Mandatory)][string]$Name
+)
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
 
-$summary = New-Item -ItemType directory -Force -Path "$PSScriptRoot/../test-results/performance-summary"
+$rootDir = $PWD
+# An absolute path, because the example runs with the repository as its working
+# directory.
+$resultsFile = Join-Path $rootDir "results_$Name.json"
+Remove-Item -Path $resultsFile -Force -ErrorAction SilentlyContinue
 
 Push-Location "$PSScriptRoot/.."
 try {
     Write-Host "Running performance test..."
-    go run ./examples/dd/performance
-
-    switch -File performance_report.log -Regex {
-        'Average ([^ ]+) ms per' { $MsPerDetection = [double]$matches.1 }
-        'Average ([^ ]+) detections per second' { $DetectionsPerSecond = [double]$matches.1 }
-    }
-
-    if (-not $MsPerDetection -or -not $DetectionsPerSecond) {
-        Get-Content performance_report.log | Write-Error
-    }
-
-    @{
-        HigherIsBetter = @{
-            DetectionsPerSecond = $DetectionsPerSecond
-        }
-        LowerIsBetter = @{
-            AvgMillisecsPerDetection = $MsPerDetection
-        }
-    } | ConvertTo-Json | Out-File $summary/results_$Name.json
+    go run ./examples/dd/performance -json-output $resultsFile
 } finally {
     Pop-Location
 }
+
+& "$rootDir/steps/publish-performance-results.ps1" -SourceFile $resultsFile -Name $Name -RepoName $RepoName
