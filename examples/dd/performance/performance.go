@@ -194,6 +194,28 @@ func checkWriteError(err error) {
 	}
 }
 
+// Write the performance results JSON the nightly performance graphs read.
+//
+// The example writes this itself so the published figure does not depend on the
+// wording or number formatting of the human-readable report above, which is
+// free to change.
+func writePerformanceResults(actR *report, jsonOutputPath string) error {
+	return dd_example.NewPerformanceResults().
+		AddHigherIsBetter("DetectionsPerSecond", detectionsPerSecond(actR)).
+		AddLowerIsBetter("AvgMillisecsPerDetection", msPerRecord(actR)).
+		WriteTo(jsonOutputPath)
+}
+
+// Mean real time per Evidence Record, in milliseconds.
+func msPerRecord(actR *report) float64 {
+	return float64(actR.processingTime) / float64(actR.evidenceCount)
+}
+
+// Detections per second across the timed run, the headline throughput.
+func detectionsPerSecond(actR *report) float64 {
+	return float64(actR.evidenceCount) * 1000 / float64(actR.processingTime)
+}
+
 // Print report to a report file and return output message.
 func printReport(actR *report, logOutputPath string) string {
 	// Get relative output path for testing
@@ -219,11 +241,9 @@ func printReport(actR *report, logOutputPath string) string {
 	// Create a writer
 	w := bufio.NewWriter(f)
 
-	msPerRecord := float64(actR.processingTime) / float64(actR.evidenceCount)
-	_, err = fmt.Fprintf(w, "Average %.5f ms per Evidence Record\n", msPerRecord)
+	_, err = fmt.Fprintf(w, "Average %.5f ms per Evidence Record\n", msPerRecord(actR))
 	checkWriteError(err)
-	detectionsPerSecond := float64(actR.evidenceCount) * 1000 / float64(actR.processingTime)
-	_, err = fmt.Fprintf(w, "Average %.2f detections per second\n", detectionsPerSecond)
+	_, err = fmt.Fprintf(w, "Average %.2f detections per second\n", detectionsPerSecond(actR))
 	checkWriteError(err)
 	_, err = fmt.Fprintf(w, "Total Evidence Records: %d\n", actR.evidenceCount)
 	checkWriteError(err)
@@ -247,6 +267,14 @@ func run(
 	// Validation to make sure same number of Evidences have been read and processed
 	if actReport.evidenceCount != actReport.evidenceProcessed {
 		log.Fatalln("ERROR: Not all Evidence Records have been processed.")
+	}
+
+	// Write the machine-readable results the performance graphs read, when CI
+	// asks for them.
+	if options.JSONOutputPath != "" {
+		if err := writePerformanceResults(&actReport, options.JSONOutputPath); err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	// Print the final performance report

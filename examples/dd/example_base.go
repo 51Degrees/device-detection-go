@@ -252,8 +252,12 @@ type Options struct {
 	DataFilePath     string
 	EvidenceFilePath string
 	LogOutputPath    string
-	Iterations       uint64
-	showHelp         bool
+	// JSONOutputPath is where the performance example writes the results JSON
+	// the nightly performance graphs read. Empty leaves it unwritten, which is
+	// what an interactive run wants.
+	JSONOutputPath string
+	Iterations     uint64
+	showHelp       bool
 }
 
 func ParseOptions() Options {
@@ -267,6 +271,9 @@ func ParseOptions() Options {
 
 	flag.StringVar(&options.LogOutputPath, "log-output", "", "Path to a output log file")
 	flag.StringVar(&options.LogOutputPath, "l", options.LogOutputPath, "Alias for -log-output")
+
+	flag.StringVar(&options.JSONOutputPath, "json-output", "", "Path to write the performance results JSON to")
+	flag.StringVar(&options.JSONOutputPath, "j", options.JSONOutputPath, "Alias for -json-output")
 
 	flag.Uint64Var(&options.Iterations, "iterations", 4, "Number of iterations")
 	flag.Uint64Var(&options.Iterations, "i", options.Iterations, "Alias for -iterations")
