@@ -4133,12 +4133,12 @@ EXTERNAL int fiftyoneDegreesIpAddressesCompare(
  *
  * @example
  * String:
- * 			Short – length – 10
+ * 			Unsigned short – length – 10
  * 			Byte value – first character of string – '5'
  */
 #pragma pack(push, 1)
 typedef struct fiftyone_degrees_string_t {
-	int16_t size; /**< Size of the string in memory (starting from 'value') */
+	uint16_t size; /**< Size of the string in memory (starting from 'value') */
 	char value; /**< The first character of the string */
 } fiftyoneDegreesString;
 #pragma pack(pop)
@@ -6161,9 +6161,19 @@ FIFTYONE_DEGREES_ARRAY_TYPE(
 );
 
 /**
- * An array of properties and values to use when getting override values.
+ * An array of properties and values to use when getting override values. The
+ * status member says whether every value offered to the array was stored, so
+ * that a caller which gave the array too little room can find that out
+ * without the request being worked on failing.
  */
-FIFTYONE_DEGREES_ARRAY_TYPE(fiftyoneDegreesOverrideValue,);
+FIFTYONE_DEGREES_ARRAY_TYPE(
+	fiftyoneDegreesOverrideValue,
+	fiftyoneDegreesStatusCode status; /**< Success until a value cannot be
+									  stored, then insufficient capacity
+									  where the array was full, or
+									  insufficient memory where the value
+									  could not be copied */
+);
 
 /**
  * Array of overridable properties. These are properties in a data set which
@@ -6194,7 +6204,11 @@ typedef bool(*fiftyoneDegreesOverridesFilterMethod)(
 	uint32_t requiredPropertyIndex);
 
 /**
- * Creates a fresh array of override values with the given capacity.
+ * Creates a fresh array of override values with the given capacity. The
+ * capacity is the number of properties the array can hold a value for, so a
+ * caller working from evidence needs room for the values the evidence
+ * carries and for the empty value given to each JavaScript property that
+ * measures one of them.
  * @param capacity the number of values the array can contain
  * @return a new array of override values
  */
@@ -6211,7 +6225,7 @@ EXTERNAL fiftyoneDegreesOverrideValueArray* fiftyoneDegreesOverrideValuesCreate(
  * property is eligible to be overridden
  * @return a new override properties array
  */
-fiftyoneDegreesOverridePropertyArray* 
+EXTERNAL fiftyoneDegreesOverridePropertyArray*
 fiftyoneDegreesOverridePropertiesCreate(
 	fiftyoneDegreesPropertiesAvailable *available,
 	bool prefix,
@@ -6222,17 +6236,20 @@ fiftyoneDegreesOverridePropertiesCreate(
  * Frees the resources used by the override properties.
  * @param properties pointer to the properties to free
  */
-void fiftyoneDegreesOverridePropertiesFree(
+EXTERNAL void fiftyoneDegreesOverridePropertiesFree(
 	fiftyoneDegreesOverridePropertyArray *properties);
 
 /**
- * Extracts override values from evidence.
+ * Extracts override values from evidence. Every cookie and query item is
+ * read, including those that follow an item whose value could not be stored,
+ * because a later item can still replace a value the array already holds.
+ * Where a value could not be stored the status of the values array says so.
  * @param properties which can be overridden
  * @param values array to populate with the override values
  * @param evidence to extract any overrides from
- * @return the number of override values which have been extracted
+ * @return the number of cookie and query evidence items read
  */
- uint32_t fiftyoneDegreesOverridesExtractFromEvidence(
+EXTERNAL uint32_t fiftyoneDegreesOverridesExtractFromEvidence(
 	fiftyoneDegreesOverridePropertyArray *properties,
 	fiftyoneDegreesOverrideValueArray *values,
 	fiftyoneDegreesEvidenceKeyValuePairArray *evidence);
@@ -6264,12 +6281,17 @@ uint32_t fiftyoneDegreesOverrideValuesAdd(
 	fiftyoneDegreesList *list);
 
 /**
- * Add an value override to the override values array.
+ * Add a value override to the override values array. Where the array already
+ * holds a value for the property the new value replaces it, which needs no
+ * free item and therefore works whether or not the array is full. Where the
+ * property is new to the array and the array is full nothing is stored, the
+ * values already held are left as they are, and the status of the array is
+ * set to insufficient capacity for the caller to read.
  * @param values the override values array to add the value to
  * @param requiredPropertyIndex the index in the dataset's required properties
  * of the property to override the value of
  * @param value the value string override
- * @return true if the value was added successfully
+ * @return true if the value was stored, otherwise false
  */
 EXTERNAL bool fiftyoneDegreesOverridesAdd(
 	fiftyoneDegreesOverrideValueArray *values,
@@ -6311,7 +6333,9 @@ EXTERNAL void fiftyoneDegreesOverrideValuesFree(
 
 /**
  * Reset override array. All existing item memory will not be freed by reset
- * with 0s. Remaining values will be reset to default except the allocateds size..
+ * with 0s. Remaining values will be reset to default except the allocateds size.
+ * The status is returned to success, so a caller which resets the array
+ * between requests reads a status that relates to the current request only.
  * @param values to be reset
  */
 EXTERNAL void fiftyoneDegreesOverrideValuesReset(
@@ -7340,7 +7364,7 @@ EXTERNAL fiftyoneDegreesResultsBase* fiftyoneDegreesResultsInit(
  * 			Byte[] – IP – [ 1, 2, 3, 4 ]
  * @example
  * WKB (value of  POINT(2.0 4.0)):
- * 			Short – length - 21
+ * 			Unsigned short – length - 21
  * 			Byte[] – value – [
  * 				0 (endianness),
  * 				0, 0, 0, 1 (2D point),
@@ -7350,7 +7374,7 @@ EXTERNAL fiftyoneDegreesResultsBase* fiftyoneDegreesResultsInit(
  */
 #pragma pack(push, 1)
 typedef struct fiftyone_degrees_var_length_byte_array_t {
- int16_t size; /**< Size of the byte array in memory (starting from 'firstByte') */
+ uint16_t size; /**< Size of the byte array in memory (starting from 'firstByte') */
  unsigned char firstByte; /**< The first byte of the array */
 } fiftyoneDegreesVarLengthByteArray;
 #pragma pack(pop)
@@ -9679,7 +9703,7 @@ static uint32_t fiftyoneDegreesGetFinalByteArraySize(
 #	ifdef _MSC_VER
     UNREFERENCED_PARAMETER(exception);
 #	endif
-    return (uint32_t)(sizeof(int16_t) + (*(int16_t*)initial));
+    return (uint32_t)(sizeof(uint16_t) + (*(uint16_t*)initial));
 }
 #else
 #define fiftyoneDegreesGetFinalByteArraySize NULL
@@ -15447,38 +15471,66 @@ bool fiftyoneDegreesOverridesAdd(
 	size_t length;
 	String *copy;
 	OverrideValue *override;
-	if (requiredPropertyIndex >= 0 && values->count < values->capacity) {
-
-		// Set the override either as a new item, or override an existing
-		// one if there is already one with the same required property
-		// index.
-		while (currentOverrideIndex < values->count &&
-			(int)values->items[currentOverrideIndex].requiredPropertyIndex !=
-			requiredPropertyIndex) {
-			currentOverrideIndex++;
-		}
-		override = &values->items[currentOverrideIndex];
-
-		if (currentOverrideIndex == values->count) {
-			// Increment the override count and set the required property
-			// index.
-			values->count++;
-			override->requiredPropertyIndex = requiredPropertyIndex;
-		}
-
-		// Ensure there is sufficient memory for the string being copied.
-		length = strlen(value);
-		copy = (String*)fiftyoneDegreesDataMalloc(
-			&override->string,
-			sizeof(String) + length);
-
-		// Copy the string from the evidence pair to the override data 
-		// item.
-		memcpy(&copy->value, value, length + 1);
-		copy->size = (int16_t)(length + 1);
+	if (values == NULL || requiredPropertyIndex < 0 || value == NULL) {
+		return false;
 	}
 
-	return values->count < values->capacity;
+	// Find the item the array already holds for the property, if any.
+	while (currentOverrideIndex < values->count &&
+		(int)values->items[currentOverrideIndex].requiredPropertyIndex !=
+		requiredPropertyIndex) {
+		currentOverrideIndex++;
+	}
+
+	if (currentOverrideIndex == values->count) {
+
+		// The property is new to the array so a free item is needed, and
+		// this is the only case that can run out of room. Replacing the
+		// value of a property the array already holds reuses that
+		// property's item, which is why the room is checked here rather
+		// than before the search.
+		if (values->count >= values->capacity) {
+			values->status = FIFTYONE_DEGREES_STATUS_INSUFFICIENT_CAPACITY;
+			return false;
+		}
+
+		// Increment the override count and set the required property
+		// index.
+		values->count++;
+		values->items[currentOverrideIndex].requiredPropertyIndex =
+			requiredPropertyIndex;
+	}
+	override = &values->items[currentOverrideIndex];
+
+	// Ensure there is sufficient memory for the string being copied.
+	length = strlen(value);
+	copy = (String*)fiftyoneDegreesDataMalloc(
+		&override->string,
+		sizeof(String) + length);
+	if (copy == NULL) {
+
+		// The value could not be copied, and any value the item held has
+		// been freed by the allocation attempt, so take the item out of the
+		// array rather than leave one with no value to return. Swapping it
+		// with the last item in use keeps every allocation with exactly one
+		// item, so the array still frees them all.
+		values->count--;
+		if (currentOverrideIndex != values->count) {
+			OverrideValue swap = values->items[currentOverrideIndex];
+			values->items[currentOverrideIndex] =
+				values->items[values->count];
+			values->items[values->count] = swap;
+		}
+		values->status = FIFTYONE_DEGREES_STATUS_INSUFFICIENT_MEMORY;
+		return false;
+	}
+
+	// Copy the string from the evidence pair to the override data
+	// item.
+	memcpy(&copy->value, value, length + 1);
+	copy->size = (uint16_t)(length + 1);
+
+	return true;
 }
 
 
@@ -15490,10 +15542,15 @@ static bool addOverrideToResults(void *state, EvidenceKeyValuePair *pair) {
 		add->properties,
 		pair->item.key);
 
-	return fiftyoneDegreesOverridesAdd(
+	fiftyoneDegreesOverridesAdd(
 		add->values,
 		requiredPropertyIndex,
 		(const char*)pair->parsedValue);
+
+	// Keep reading the evidence whatever the add did. A value that could not
+	// be stored is recorded in the status of the values array, and an item
+	// further on can still replace a value the array already holds.
+	return true;
 }
 
 static uint32_t countOverridableProperties(
@@ -15533,6 +15590,7 @@ fiftyoneDegreesOverrideValueArray* fiftyoneDegreesOverrideValuesCreate(
 	fiftyoneDegreesOverrideValueArray* overrides;
 	FIFTYONE_DEGREES_ARRAY_CREATE(OverrideValue, overrides, capacity);
 	if (overrides != NULL) {
+		overrides->status = FIFTYONE_DEGREES_STATUS_SUCCESS;
 		for (i = 0; i < capacity; i++) {
 			item = &overrides->items[i];
 			item->requiredPropertyIndex = 0;
@@ -15713,6 +15771,7 @@ void fiftyoneDegreesOverrideValuesReset(
 			}
 		}
 		overrides->count = 0;
+		overrides->status = FIFTYONE_DEGREES_STATUS_SUCCESS;
 	}
 }
 
@@ -18300,7 +18359,7 @@ uint32_t fiftyoneDegreesStringGetFinalSize(
 #	ifdef _MSC_VER
     UNREFERENCED_PARAMETER(exception);
 #	endif
-	return (uint32_t)(sizeof(int16_t) + (*(int16_t*)initial));
+	return (uint32_t)(sizeof(uint16_t) + (*(uint16_t*)initial));
 }
 #endif
 
@@ -18311,7 +18370,7 @@ void* fiftyoneDegreesStringRead(
 	const CollectionKey * const key,
 	fiftyoneDegreesData * const data,
 	fiftyoneDegreesException * const exception) {
-	int16_t length;
+	uint16_t length;
 	return CollectionReadFileVariable(
 		file,
 		data,
@@ -24603,8 +24662,11 @@ EXTERNAL int fiftyoneDegreesResultsHashFromDeviceId(
  * integrations built against the pre-4.5 API (e.g. the HAProxy 51degrees
  * addon, which still passes it) continue to compile unchanged. Results are
  * now sized by the number of components determined at initialisation.
- * @param overridesCapacity number of properties that can be overridden,
- * 0 to disable overrides
+ * @param overridesCapacity 0 to disable overrides, any other number to
+ * enable them. The list is sized at the number of properties the data set
+ * allows evidence to override, which is as many as a set of results can
+ * need, or at this number where that is larger, so a caller processing
+ * evidence does not have to work the size out for itself.
  * @return newly created results structure
  */
 EXTERNAL fiftyoneDegreesResultsHash* fiftyoneDegreesResultsHashCreate(
@@ -28541,6 +28603,23 @@ fiftyoneDegreesResultsHash* fiftyoneDegreesResultsHashCreate(
 	// Increment the inUse counter for the active data set so that we can
 	// track any results that are created.
 	DataSetHash* dataSet = (DataSetHash*)DataSetGet(manager);
+
+	// A set of results can never need more override values than there are
+	// properties the data set allows evidence to override, because a value is
+	// held once for each of those properties and a second value for the same
+	// property replaces the first. Every value the evidence carries, every
+	// empty value marking the JavaScript property that measures one of those
+	// values, and the empty value for the high entropy values script, is a
+	// value for one of those properties. Sizing the list here means a caller
+	// no longer has to work the size out from the evidence, which is what
+	// left values, in particular those empty values, unapplied. A caller
+	// asking for more still gets what it asks for, and a caller asking for
+	// none still gets none, which is how overrides are turned off.
+	if (overridesCapacity > 0 &&
+		dataSet->b.b.overridable != NULL &&
+		dataSet->b.b.overridable->count > overridesCapacity) {
+		overridesCapacity = dataSet->b.b.overridable->count;
+	}
 
 	// Create a new instance of results with a result for each component in the
 	// dataset.
