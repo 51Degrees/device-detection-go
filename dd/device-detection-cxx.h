@@ -6537,6 +6537,14 @@ EXTERNAL bool fiftyoneDegreesStoredBinaryValueToBoolOrDefault(
 #endif
 
 /**
+ * Returned by fiftyoneDegreesIndicesPropertyProfileLookup, and held in every
+ * unused entry of the index, when the profile has no value for the property.
+ * This is the case for a profile id between the lowest and highest that is
+ * not in the data set, and for a property the profile has no values for.
+ */
+#define FIFTYONE_DEGREES_INDICES_NO_VALUE UINT32_MAX
+
+/**
  * Maps the profile index and the property index to the first value index of 
  * the profile for the property. Is an array of uint32_t with entries equal to 
  * the number of properties multiplied by the difference between the lowest and
@@ -6581,8 +6589,10 @@ EXTERNAL void fiftyoneDegreesIndicesPropertyProfileFree(
 	fiftyoneDegreesIndicesPropertyProfile* index);
 
 /**
- * For a given profile id and available property index returns the first value 
- * index, or null if a first index can not be determined from the index. The
+ * For a given profile id and available property index returns the first value
+ * index, or FIFTYONE_DEGREES_INDICES_NO_VALUE if the profile has no value for
+ * the property, the profile id is outside the range of the index, or the
+ * available property index is not one the index was created with. The
  * indexes relate to the collections for profiles, properties, and values 
  * provided to the fiftyoneDegreesIndicesPropertyProfileCreate method when the 
  * index was created. The availablePropertyIndex is not the index of all 
@@ -6591,8 +6601,8 @@ EXTERNAL void fiftyoneDegreesIndicesPropertyProfileFree(
  * @param index from fiftyoneDegreesIndicesPropertyProfileCreate to use
  * @param profileId the values need to relate to
  * @param availablePropertyIndex in the list of required properties
- * @return the index in the list of values for the profile for the first value 
- * associated with the property
+ * @return the index in the list of values for the profile for the first value
+ * associated with the property, or FIFTYONE_DEGREES_INDICES_NO_VALUE
  */
 EXTERNAL uint32_t fiftyoneDegreesIndicesPropertyProfileLookup(
 	fiftyoneDegreesIndicesPropertyProfile* index,
