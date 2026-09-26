@@ -5459,6 +5459,12 @@ typedef struct fiftyone_degrees_property_available_t {
                          it should be run immediately. This is always
                          initialized to false, so should be set by the calling
                          function */
+    byte componentIndex; /**< Index in the data set's component list of the
+                         component the property belongs to. Initialised to
+                         zero and set by the engine when it initialises its
+                         available components. Used to turn required
+                         property indexes into the mask of components to
+                         evaluate. */
 } fiftyoneDegreesPropertyAvailable;
 
 FIFTYONE_DEGREES_ARRAY_TYPE(fiftyoneDegreesPropertyAvailable,)
@@ -5588,6 +5594,49 @@ EXTERNAL fiftyoneDegreesString*
 	fiftyoneDegreesPropertiesGetNameFromRequiredIndex(
 		fiftyoneDegreesPropertiesAvailable *available,
 		int requiredPropertyIndex);
+
+/**
+ * Mask with every component enabled.
+ */
+#define FIFTYONE_DEGREES_COMPONENT_MASK_ALL UINT32_MAX
+
+/**
+ * Number of components the mask can address.
+ */
+#define FIFTYONE_DEGREES_COMPONENT_MASK_BITS 32
+
+/**
+ * True if component index i is enabled under the mask. Components at index
+ * 32 and above are beyond the mask and are always enabled, so a data set
+ * with more than 32 components is filtered for the first 32 only and the
+ * shift never exceeds the width of the mask.
+ * @param mask the component mask
+ * @param i component index
+ */
+#define FIFTYONE_DEGREES_COMPONENT_MASK_ENABLED(mask, i) \
+	((uint32_t)(i) >= FIFTYONE_DEGREES_COMPONENT_MASK_BITS || \
+	((mask) & (1u << (i))) != 0)
+
+/**
+ * Builds the mask of components whose graphs a detection must evaluate from
+ * the required property indexes a caller will read. Bit i means component i,
+ * using the componentIndex recorded on each available property. The engine
+ * must record that index when it initialises its available components, as
+ * the Hash and IP intelligence engines do. Under an engine that does not,
+ * every property reads as component 0.
+ * @param available the available properties of the data set
+ * @param requiredPropertyIndexes array of required property indexes, or NULL
+ * to enable every component
+ * @param requiredPropertyIndexesCount number of entries in the array. A
+ * negative count enables every component. Zero with a non NULL array enables
+ * none. Indexes outside the available properties are ignored, as are
+ * components at index 32 and above, which the mask cannot address.
+ * @return the component mask
+ */
+EXTERNAL uint32_t fiftyoneDegreesPropertiesGetComponentMask(
+	fiftyoneDegreesPropertiesAvailable *available,
+	const int *requiredPropertyIndexes,
+	int requiredPropertyIndexesCount);
 
 /**
  * Check if the 'SetHeader' properties are included in the
@@ -9511,6 +9560,70 @@ EXTERNAL void fiftyoneDegreesResultsHashFromUserAgent(
 	fiftyoneDegreesException *exception);
 
 /**
+ * Processes the evidence exactly as #fiftyoneDegreesResultsHashFromEvidence,
+ * but walks only the graphs needed by the required properties whose indexes
+ * are supplied. It is meant for a service that knows, for every request,
+ * which properties it will read. Other callers should use
+ * #fiftyoneDegreesResultsHashFromEvidence.
+ *
+ * Results are built as for an unfiltered detection. A component whose graph
+ * was not walked still takes the result its evidence would have used, with
+ * no profile, so its properties report no value with the NULL_PROFILE
+ * reason, and it receives no default profile even when allowUnmatched is
+ * set. Values worked out across every result, such as the device id, the
+ * matched User-Agents and the match metrics, count that result as a
+ * component that matched nothing.
+ *
+ * The indexes are turned into a 32 bit mask, bit i meaning the graph for
+ * component i in componentsList. Components at index 32 and above are beyond
+ * the mask and are always walked, so a data file with more than 32 components
+ * is filtered for the first 32 only.
+ *
+ * An index is a position in the required properties of the data set the
+ * results use, which are sorted by name. A reloaded data file that gains or
+ * loses a required property moves the indexes of the properties after it, so
+ * look them up again after a reload, for example with
+ * #fiftyoneDegreesPropertiesGetRequiredPropertyIndexFromName.
+ * @param results preallocated results structure to populate
+ * @param evidence to process containing parsed or unparsed values
+ * @param requiredPropertyIndexes array of required property indexes the
+ * caller will read, or NULL to walk every graph
+ * @param requiredPropertyIndexesCount number of entries in the array. A
+ * negative count walks every graph. A count of zero with a non NULL array
+ * walks no graph. Indexes outside the required properties are ignored.
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ */
+EXTERNAL void fiftyoneDegreesResultsHashFromEvidenceForProperties(
+	fiftyoneDegreesResultsHash *results,
+	fiftyoneDegreesEvidenceKeyValuePairArray *evidence,
+	const int *requiredPropertyIndexes,
+	int requiredPropertyIndexesCount,
+	fiftyoneDegreesException *exception);
+
+/**
+ * Processes the User-Agent exactly as #fiftyoneDegreesResultsHashFromUserAgent,
+ * but walks only the graphs needed by the required properties whose indexes
+ * are supplied. See #fiftyoneDegreesResultsHashFromEvidenceForProperties for
+ * the rules that apply to the indexes.
+ * @param results preallocated results structure to populate
+ * @param userAgent string to process
+ * @param userAgentLength of the User-Agent string
+ * @param requiredPropertyIndexes array of required property indexes the
+ * caller will read, or NULL to walk every graph
+ * @param requiredPropertyIndexesCount number of entries in the array
+ * @param exception pointer to an exception data structure to be used if an
+ * exception occurs. See exceptions.h.
+ */
+EXTERNAL void fiftyoneDegreesResultsHashFromUserAgentForProperties(
+	fiftyoneDegreesResultsHash *results,
+	const char* userAgent,
+	size_t userAgentLength,
+	const int *requiredPropertyIndexes,
+	int requiredPropertyIndexesCount,
+	fiftyoneDegreesException *exception);
+
+/**
  * Process a single Device Id and populate the device offsets in the results
  * structure.
  * @param results preallocated results structure to populate
@@ -10689,6 +10802,7 @@ MAP_TYPE(WeightedItemList)
 #define EvidenceAddString fiftyoneDegreesEvidenceAddString /**< Synonym for #fiftyoneDegreesEvidenceAddString function. */
 #define PropertiesGetRequiredPropertyIndexFromName fiftyoneDegreesPropertiesGetRequiredPropertyIndexFromName /**< Synonym for #fiftyoneDegreesPropertiesGetRequiredPropertyIndexFromName function. */
 #define PropertiesGetNameFromRequiredIndex fiftyoneDegreesPropertiesGetNameFromRequiredIndex /**< Synonym for #fiftyoneDegreesPropertiesGetNameFromRequiredIndex function. */
+#define PropertiesGetComponentMask fiftyoneDegreesPropertiesGetComponentMask /**< Synonym for #fiftyoneDegreesPropertiesGetComponentMask function. */
 #define PropertiesIsSetHeaderAvailable fiftyoneDegreesPropertiesIsSetHeaderAvailable /**< Synonym for #fiftyoneDegreesPropertiesIsSetHeaderAvailable */
 #define CollectionHeaderFromFile fiftyoneDegreesCollectionHeaderFromFile /**< Synonym for #fiftyoneDegreesCollectionHeaderFromFile function. */
 #define CollectionCreateFromFile fiftyoneDegreesCollectionCreateFromFile /**< Synonym for #fiftyoneDegreesCollectionCreateFromFile function. */
@@ -10800,6 +10914,9 @@ MAP_TYPE(WeightedItemList)
 #define EXCEPTION_THROW FIFTYONE_DEGREES_EXCEPTION_THROW /**< Synonym for #FIFTYONE_DEGREES_EXCEPTION_THROW macro. */
 #define EXCEPTION_CHECK FIFTYONE_DEGREES_EXCEPTION_CHECK /**< Synonym for #FIFTYONE_DEGREES_EXCEPTION_CHECK macro. */
 #define STRING FIFTYONE_DEGREES_STRING /**< Synonym for #FIFTYONE_DEGREES_STRING macro. */
+#define COMPONENT_MASK_ALL FIFTYONE_DEGREES_COMPONENT_MASK_ALL /**< Synonym for #FIFTYONE_DEGREES_COMPONENT_MASK_ALL macro. */
+#define COMPONENT_MASK_BITS FIFTYONE_DEGREES_COMPONENT_MASK_BITS /**< Synonym for #FIFTYONE_DEGREES_COMPONENT_MASK_BITS macro. */
+#define COMPONENT_MASK_ENABLED FIFTYONE_DEGREES_COMPONENT_MASK_ENABLED /**< Synonym for #FIFTYONE_DEGREES_COMPONENT_MASK_ENABLED macro. */
 #define COLLECTION_RELEASE FIFTYONE_DEGREES_COLLECTION_RELEASE /**< Synonym for #FIFTYONE_DEGREES_COLLECTION_RELEASE macro. */
 #define FILE_MAX_PATH FIFTYONE_DEGREES_FILE_MAX_PATH /**< Synonym for #FIFTYONE_DEGREES_FILE_MAX_PATH macro. */
 #define THREAD_CREATE FIFTYONE_DEGREES_THREAD_CREATE /**< Synonym for #FIFTYONE_DEGREES_THREAD_CREATE macro. */
@@ -11357,6 +11474,8 @@ MAP_TYPE(HashMatchMethod)
 #define ResultsHashFromDeviceId fiftyoneDegreesResultsHashFromDeviceId /**< Synonym for #fiftyoneDegreesResultsHashFromDeviceId function. */
 #define ResultsHashFromUserAgent fiftyoneDegreesResultsHashFromUserAgent /**< Synonym for #fiftyoneDegreesResultsHashFromUserAgent function. */
 #define ResultsHashFromEvidence fiftyoneDegreesResultsHashFromEvidence /**< Synonym for #fiftyoneDegreesResultsHashFromEvidence function. */
+#define ResultsHashFromUserAgentForProperties fiftyoneDegreesResultsHashFromUserAgentForProperties /**< Synonym for #fiftyoneDegreesResultsHashFromUserAgentForProperties function. */
+#define ResultsHashFromEvidenceForProperties fiftyoneDegreesResultsHashFromEvidenceForProperties /**< Synonym for #fiftyoneDegreesResultsHashFromEvidenceForProperties function. */
 #define DataSetHashGet fiftyoneDegreesDataSetHashGet /**< Synonym for #fiftyoneDegreesDataSetHashGet function. */
 #define DataSetHashRelease fiftyoneDegreesDataSetHashRelease /**< Synonym for #fiftyoneDegreesDataSetHashRelease function. */
 #define HashSizeManagerFromFile fiftyoneDegreesHashSizeManagerFromFile /**< Synonym for #fiftyoneDegreesHashSizeManagerFromFile function. */
