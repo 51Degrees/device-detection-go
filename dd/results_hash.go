@@ -130,7 +130,7 @@ func (results *ResultsHash) DeviceId() (id string, err error) {
 
 	// Check exception
 	if !exp.IsOkay() {
-		return "", fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		return "", messageError(C.ExceptionGetMessage(exp.CPtr))
 	}
 	return C.GoString(&idCStr[0]), nil
 }
@@ -155,7 +155,7 @@ func (results *ResultsHash) DeviceIdByIndex(
 
 	// Check exception
 	if !exp.IsOkay() {
-		return "", fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		return "", messageError(C.ExceptionGetMessage(exp.CPtr))
 	}
 	return C.GoString(&idCStr[0]), nil
 }
@@ -307,7 +307,7 @@ func (results *ResultsHash) HasValuesByIndex(
 
 	// Check exception
 	if !exp.IsOkay() {
-		return false, fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		return false, messageError(C.ExceptionGetMessage(exp.CPtr))
 	}
 	return bool(r), nil
 }
@@ -336,7 +336,7 @@ func (results *ResultsHash) NoValueReasonMessageByIndex(
 
 	// Check exception
 	if !exp.IsOkay() {
-		return "", fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		return "", messageError(C.ExceptionGetMessage(exp.CPtr))
 	}
 
 	// Get no value reason message
@@ -398,8 +398,7 @@ func valuesStringWithSize(
 
 		// Check exception
 		if !exp.IsOkay() {
-			return "", fmt.Errorf(
-				C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+			return "", messageError(C.ExceptionGetMessage(exp.CPtr))
 		}
 		if ok = actualSize > defaultSize; ok {
 			// Add 1 for the null terminator
@@ -485,7 +484,7 @@ func (results *ResultsHash) MatchUserAgent(ua string) error {
 
 	// Check exception
 	if !e.IsOkay() {
-		return fmt.Errorf(C.GoString(C.ExceptionGetMessage(e.CPtr)))
+		return messageError(C.ExceptionGetMessage(e.CPtr))
 	}
 
 	return nil
@@ -501,7 +500,7 @@ func (results *ResultsHash) MatchEvidence(e *Evidence) error {
 		exp.CPtr)
 	// Check exception
 	if !exp.IsOkay() {
-		return fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		return messageError(C.ExceptionGetMessage(exp.CPtr))
 	}
 	return nil
 }
@@ -520,7 +519,7 @@ func (results *ResultsHash) MatchDeviceId(id string) error {
 
 	// Check exception
 	if !exp.IsOkay() {
-		return fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		return messageError(C.ExceptionGetMessage(exp.CPtr))
 	}
 
 	return nil
