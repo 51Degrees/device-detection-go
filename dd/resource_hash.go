@@ -97,6 +97,7 @@ func InitManagerFromMemory(
 func (manager *ResourceManager) ReloadFromFile(fileName string) error {
 	exp := NewException()
 	cFilenamePath := C.CString(fileName)
+	defer C.free(unsafe.Pointer(cFilenamePath))
 	C.HashReloadManagerFromFile(
 		manager.CPtr,
 		cFilenamePath,
