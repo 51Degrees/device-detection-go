@@ -45,3 +45,36 @@ func TestMessageError(t *testing.T) {
 		t.Errorf("error does not hold the path %q: %v", path, err)
 	}
 }
+
+// TestMessageFreed checks that a failed initialisation leaves nothing the
+// library allocated, its message included. A missing file fails in the file
+// pool with an exception for a file based profile, and with a status code
+// for the in memory profile.
+func TestMessageFreed(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile PerformanceProfile
+	}{
+		{"exception", LowMemory},
+		{"status", InMemory},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "missing.hash")
+			manager := NewResourceManager()
+			defer manager.Free()
+			config := NewConfigHash(tt.profile)
+
+			var err error
+			left := allocatedDuring(func() {
+				err = InitManagerFromFile(manager, *config, "", path)
+			})
+			if err == nil {
+				t.Fatal("InitManagerFromFile() accepted a missing file")
+			}
+			if left != 0 {
+				t.Errorf("%d bytes were not freed after: %v", left, err)
+			}
+		})
+	}
+}
