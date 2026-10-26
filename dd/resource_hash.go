@@ -59,14 +59,12 @@ func InitManagerFromFile(
 
 	// Check exception
 	if !e.IsOkay() {
-		return fmt.Errorf(C.GoString(C.ExceptionGetMessage(e.CPtr)))
+		return messageError(C.ExceptionGetMessage(e.CPtr))
 	}
 
 	// Check status code
 	if s != C.SUCCESS {
-		cMessage := C.StatusGetMessage(s, cPath)
-		defer C.MemoryStandardFree(unsafe.Pointer(cMessage))
-		return fmt.Errorf(C.GoString(cMessage))
+		return messageError(C.StatusGetMessage(s, cPath))
 	}
 
 	// Construct the Set Headers list
@@ -105,7 +103,7 @@ func (manager *ResourceManager) ReloadFromFile(fileName string) error {
 		exp.CPtr,
 	)
 	if !exp.IsOkay() {
-		return fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		return messageError(C.ExceptionGetMessage(exp.CPtr))
 	}
 
 	return nil
@@ -122,7 +120,7 @@ func (manager *ResourceManager) ReloadFromOriginalFile() error {
 		exp.CPtr,
 	)
 	if !exp.IsOkay() {
-		return fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		return messageError(C.ExceptionGetMessage(exp.CPtr))
 	}
 	return nil
 }

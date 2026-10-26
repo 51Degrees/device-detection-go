@@ -27,7 +27,6 @@ package dd
 // #include "device-detection-cxx.h"
 import "C"
 import (
-	"fmt"
 	"math"
 	"unsafe"
 )
@@ -276,7 +275,7 @@ func (config *ConfigHash) SizeManagerFromFile(
 
 	// Check if no exception was thrown
 	if !exp.IsOkay() {
-		return 0, fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		return 0, messageError(C.ExceptionGetMessage(exp.CPtr))
 	}
 	return uint64(s), nil
 }
