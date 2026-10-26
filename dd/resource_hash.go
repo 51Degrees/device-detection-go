@@ -98,13 +98,18 @@ func (manager *ResourceManager) ReloadFromFile(fileName string) error {
 	exp := NewException()
 	cFilenamePath := C.CString(fileName)
 	defer C.free(unsafe.Pointer(cFilenamePath))
-	C.HashReloadManagerFromFile(
+	s := C.HashReloadManagerFromFile(
 		manager.CPtr,
 		cFilenamePath,
 		exp.CPtr,
 	)
 	if !exp.IsOkay() {
 		return messageError(C.ExceptionGetMessage(exp.CPtr))
+	}
+
+	// Check status code
+	if s != C.SUCCESS {
+		return messageError(C.StatusGetMessage(s, cFilenamePath))
 	}
 
 	return nil
@@ -116,12 +121,20 @@ func (manager *ResourceManager) ReloadFromFile(fileName string) error {
 // fiftyoneDegreesHashReloadManagerFromOriginalFile
 func (manager *ResourceManager) ReloadFromOriginalFile() error {
 	exp := NewException()
-	C.HashReloadManagerFromOriginalFile(
+	s := C.HashReloadManagerFromOriginalFile(
 		manager.CPtr,
 		exp.CPtr,
 	)
 	if !exp.IsOkay() {
 		return messageError(C.ExceptionGetMessage(exp.CPtr))
+	}
+
+	// Check status code. The reload read the file the loaded data set came
+	// from, so the message names that file.
+	if s != C.SUCCESS {
+		dataSet := C.DataSetGet(manager.CPtr)
+		defer C.DataSetRelease(dataSet)
+		return messageError(C.StatusGetMessage(s, &dataSet.masterFileName[0]))
 	}
 	return nil
 }
