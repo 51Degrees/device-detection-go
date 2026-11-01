@@ -24,9 +24,11 @@ package dd
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -391,5 +393,61 @@ func TestIsPseudoHeader(t *testing.T) {
 		if act != data.expected {
 			t.Errorf("Expected '%v' but get '%v'", data.expected, act)
 		}
+	}
+}
+
+// A file of the wrong version is refused by the status alone, so a reload of
+// one must still return an error, and the data set in use must still answer.
+func TestReloadReportsStatusFailure(t *testing.T) {
+	good, err := os.ReadFile(testDataFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad := append([]byte{}, good...)
+	// The header starts with the major version of the format.
+	binary.LittleEndian.PutUint32(bad, 3)
+
+	dir := t.TempDir()
+	master := filepath.Join(dir, "master.hash")
+	other := filepath.Join(dir, "other.hash")
+	for path, data := range map[string][]byte{master: good, other: bad} {
+		if err := os.WriteFile(path, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	manager := NewResourceManager()
+	defer manager.Free()
+	// In memory, so that the master file can be replaced on Windows.
+	config := NewConfigHash(InMemory)
+	if err := InitManagerFromFile(manager, *config, "", master); err != nil {
+		t.Fatal(err)
+	}
+
+	checkStatusFailure(t, manager.ReloadFromFile(other), other)
+
+	if err := os.Rename(other, master); err != nil {
+		t.Fatal(err)
+	}
+	checkStatusFailure(t, manager.ReloadFromOriginalFile(), master)
+
+	results := NewResultsHash(manager, 1, 0)
+	defer results.Free()
+	if err := results.MatchUserAgent(uaMobile); err != nil {
+		t.Fatal(err)
+	}
+	if value, _ := results.ValuesString("IsMobile", ","); value != "True" {
+		t.Errorf("IsMobile is %q after the failed reloads", value)
+	}
+}
+
+func checkStatusFailure(t *testing.T, err error, path string) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("a reload of %s returned no error", path)
+	}
+	if !strings.Contains(err.Error(), "unsupported version") ||
+		!strings.Contains(err.Error(), path) {
+		t.Errorf("error %q does not name the version and %s", err, path)
 	}
 }
