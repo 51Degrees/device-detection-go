@@ -27,6 +27,8 @@ type Engine struct {
 
 	stopCh           chan *sync.WaitGroup
 	reloadFileEvents chan struct{}
+	// reloadLoop is done once reloadFileEvent has returned.
+	reloadLoop sync.WaitGroup
 
 	licenseKey                string
 	product                   string
@@ -109,6 +111,7 @@ func (e *Engine) handleFileExternallyChanged() {
 func (e *Engine) run() error {
 	e.recoverEngine()
 
+	e.reloadLoop.Add(1)
 	go e.reloadFileEvent()
 
 	if err := e.processFileExternallyChanged(); err != nil {
@@ -148,9 +151,13 @@ func (e *Engine) Stop() {
 		wg.Wait()
 	}
 
+	// Closing the channel ends the reload loop once a reload in progress has
+	// finished, so the manager is not freed while it is being reloaded.
+	close(e.reloadFileEvents)
+	e.reloadLoop.Wait()
+
 	e.isStopped = true
 	close(e.stopCh)
-	close(e.reloadFileEvents)
 
 	if e.manager != nil {
 		e.manager.Free()
@@ -178,11 +185,14 @@ func (e *Engine) recoverEngine() {
 	}()
 }
 
-// reloadFileEvent listens for file change events and processes them, handling external file modifications if detected.
+// reloadFileEvent reloads the data file each time the file puller has pulled a
+// new one, until the engine stops. A failed reload is logged and the engine
+// keeps the data it has, so a later file is still loaded.
 func (e *Engine) reloadFileEvent() {
+	defer e.reloadLoop.Done()
 	for range e.reloadFileEvents {
 		if err := e.processFileExternallyChanged(); err != nil {
-			return
+			e.logger.Printf("failed to reload pulled data file: %v", err)
 		}
 	}
 }
@@ -248,12 +258,16 @@ func (e *Engine) processFileExternallyChanged() error {
 // this function will be called when the engine is started or the is new file available
 // it will create and initialize a new manager from the new file if it does not exist
 // if the manager exists, it will create a new manager from the new file and replace the existing manager thus freeing memory of the old manager
-func (e *Engine) reloadManager(filePath string) error {
+func (e *Engine) reloadManager(filePath string) (err error) {
 	if e.isStopped {
 		return nil
 	}
-	// if manager is nil, create a new one
+	// Only a load that worked is logged, as a manager whose first load failed
+	// has no data set to read the published date from.
 	defer func() {
+		if err != nil {
+			return
+		}
 		year, month, day := e.getPublishedDate().Date()
 		e.logger.Printf("data file loaded from " + filePath + " published on: " + fmt.Sprintf("%d-%d-%d", year, month, day))
 	}()
@@ -264,34 +278,45 @@ func (e *Engine) reloadManager(filePath string) error {
 		if e.config == nil {
 			e.config = dd.NewConfigHash(dd.Balanced)
 		}
-		err := dd.InitManagerFromFile(e.manager, *e.config, e.managerProperties, filePath)
+		err = dd.InitManagerFromFile(e.manager, *e.config, e.managerProperties, filePath)
 		if err != nil {
+			if e.IsCreateTempDataCopyEnabled() {
+				e.removeCopy(filePath)
+			}
 			return fmt.Errorf("failed to init manager from file: %w", err)
 		}
 		e.dataFileLastUsedByManager = filePath
 		// return nil is created for the first time
 		return nil
 	} else if !e.IsCreateTempDataCopyEnabled() {
-		err := e.manager.ReloadFromOriginalFile()
+		err = e.manager.ReloadFromOriginalFile()
 		if err != nil {
 			return fmt.Errorf("failed to reload manager from original file: %w", err)
 		}
 		return nil
 	}
 
-	err := e.manager.ReloadFromFile(filePath)
+	err = e.manager.ReloadFromFile(filePath)
 	if err != nil {
+		// The data set in use is kept, so the copy made for this reload is
+		// not needed.
+		e.removeCopy(filePath)
 		return fmt.Errorf("failed to reload manager from file: %w", err)
 	}
 
-	err = os.Remove(e.dataFileLastUsedByManager)
-	if err != nil {
-		return err
-	}
-
+	e.removeCopy(e.dataFileLastUsedByManager)
 	e.dataFileLastUsedByManager = filePath
 
 	return nil
+}
+
+// removeCopy deletes a temporary copy of the data file. Windows cannot delete
+// a copy that a data set still has open, so a failure is logged and the copy is
+// left for Stop, which removes the temporary directory.
+func (e *Engine) removeCopy(path string) {
+	if err := os.Remove(path); err != nil {
+		e.logger.Printf("failed to remove data file copy: %v", err)
+	}
 }
 
 // getPublishedDate retrieves the published date of the data file used by the engine.
@@ -317,6 +342,8 @@ func (e *Engine) Process(evidenceList []Evidence) (*dd.ResultsHash, error) {
 	results := dd.NewResultsHash(e.manager, uint32(evidenceHash.Count()), 0)
 	err = results.MatchEvidence(evidenceHash)
 	if err != nil {
+		// Unfreed results panic in their finalizer.
+		results.Free()
 		return nil, fmt.Errorf("failed to match evidence: %w", err)
 	}
 

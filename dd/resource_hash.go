@@ -27,6 +27,7 @@ package dd
 // #include "device-detection-cxx.h"
 import "C"
 import (
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -99,16 +100,13 @@ func InitManagerFromMemory(
 func (manager *ResourceManager) ReloadFromFile(fileName string) error {
 	exp := NewException()
 	cFilenamePath := C.CString(fileName)
-	C.HashReloadManagerFromFile(
+	defer C.free(unsafe.Pointer(cFilenamePath))
+	s := C.HashReloadManagerFromFile(
 		manager.CPtr,
 		cFilenamePath,
 		exp.CPtr,
 	)
-	if !exp.IsOkay() {
-		return fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
-	}
-
-	return nil
+	return reloadError(s, exp, cFilenamePath)
 }
 
 // ReloadFromOriginalFile reloads the data set being used by the resource
@@ -117,12 +115,31 @@ func (manager *ResourceManager) ReloadFromFile(fileName string) error {
 // fiftyoneDegreesHashReloadManagerFromOriginalFile
 func (manager *ResourceManager) ReloadFromOriginalFile() error {
 	exp := NewException()
-	C.HashReloadManagerFromOriginalFile(
+	s := C.HashReloadManagerFromOriginalFile(
 		manager.CPtr,
 		exp.CPtr,
 	)
+	if s == C.SUCCESS && exp.IsOkay() {
+		return nil
+	}
+	cDataSet := C.DataSetGet(manager.CPtr)
+	defer C.DataSetRelease(cDataSet)
+	return reloadError(s, exp, &cDataSet.masterFileName[0])
+}
+
+// reloadError returns the failure of a reload, or nil if it worked. A reload
+// can report a failure in the exception alone or in the status alone, so both
+// are checked.
+func reloadError(s C.StatusCode, exp *Exception, fileName *C.char) error {
 	if !exp.IsOkay() {
-		return fmt.Errorf(C.GoString(C.ExceptionGetMessage(exp.CPtr)))
+		cMessage := C.ExceptionGetMessage(exp.CPtr)
+		defer C.MemoryStandardFree(unsafe.Pointer(cMessage))
+		return errors.New(C.GoString(cMessage))
+	}
+	if s != C.SUCCESS {
+		cMessage := C.StatusGetMessage(s, fileName)
+		defer C.MemoryStandardFree(unsafe.Pointer(cMessage))
+		return errors.New(C.GoString(cMessage))
 	}
 	return nil
 }
