@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This repo is being merged into the monorepo https://github.com/51Degrees/51degrees-go. The move is in progress. Please don't open new issues or PRs here.
+
 # 51Degrees Device Detection Engines
 
 ![51Degrees](https://51degrees.com/img/logo.png?utm_source=github&utm_medium=readme&utm_campaign=device-detection-go&utm_content=readme.md&utm_term=51degrees-device-detection-engines "Data rewards the curious") **Go Device Detection**
