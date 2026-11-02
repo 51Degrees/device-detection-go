@@ -1,3 +1,4 @@
+// Deprecated: use github.com/51Degrees/51degrees-go/device-detection/v4 instead.
 module github.com/51Degrees/device-detection-go/v4
 
 go 1.19
